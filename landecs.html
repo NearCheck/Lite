@@ -1,0 +1,2500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NearCheck Lite - Smart Attendance System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary: #007AFF;
+            --primary-dark: #0062CC;
+            --secondary: #34C759;
+            --error: #FF3B30;
+            --warning: #FF9500;
+            --success: #34C759;
+            --text: #1C1C1E;
+            --text-secondary: #636366;
+            --background: #F2F2F7;
+            --card-background: #FFFFFF;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .button {
+            padding: 10px 16px;
+            border-radius: var(--border-radius);
+            border: none;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .button-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .button-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .button-secondary {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .button-secondary:hover {
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+
+        .button-danger {
+            background-color: var(--error);
+            color: white;
+        }
+
+        .button-danger:hover {
+            background-color: #D70015;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .input-group input,
+        .input-group select,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #D1D1D6;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            transition: border 0.2s ease;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Auth Screen */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .role-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .role-button {
+            padding: 16px;
+            border-radius: var(--border-radius);
+            border: 1px solid #D1D1D6;
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .role-button:hover {
+            border-color: var(--primary);
+            background-color: rgba(0, 122, 255, 0.05);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .drawer {
+            width: 250px;
+            background-color: var(--card-background);
+            box-shadow: var(--box-shadow);
+            transition: transform 0.3s ease;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .drawer.open {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #F2F2F7;
+        }
+
+        .drawer-header h2 {
+            font-size: 18px;
+        }
+
+        .menu-toggle {
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        .drawer-menu {
+            padding: 16px 0;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .menu-item.active {
+            color: var(--primary);
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+
+        .menu-item:hover:not(.active) {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .drawer-footer {
+            padding: 16px;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 24px;
+            transition: margin 0.3s ease;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .greeting {
+            margin-bottom: 24px;
+        }
+
+        .greeting h2 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .greeting p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .section-carousel {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .section-card {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            position: relative;
+        }
+
+        .section-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .section-menu {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .section-card h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .section-card p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .section-id {
+            display: inline-block;
+            background-color: #F2F2F7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 8px 0;
+        }
+
+        .section-actions {
+            margin-top: 16px;
+        }
+
+        .teacher-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .teacher-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background-color: white;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            margin: 20px;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #F2F2F7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-body {
+            padding: 16px;
+        }
+
+        .modal-footer {
+            padding: 16px;
+            border-top: 1px solid #F2F2F7;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .qr-code {
+            display: inline-block;
+            background-color: white;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            margin-bottom: 8px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .drawer {
+                transform: translateX(-100%);
+                width: 280px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+
+            .section-carousel {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                margin: 10px;
+                max-height: 80vh;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+
+        /* Utility Classes */
+        .mt-4 { margin-top: 16px; }
+        .mb-4 { margin-bottom: 16px; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <!-- Firebase and QR Code Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFBb1l7GHsPbCMT9_XI6Lqc88dxaAydTQ",
+            authDomain: "lite-50af2.firebaseapp.com",
+            databaseURL: "https://lite-50af2-default-rtdb.firebaseio.com",
+            projectId: "lite-50af2",
+            storageBucket: "lite-50af2.appspot.com",
+            messagingSenderId: "259126907909",
+            appId: "1:259126907909:web:9bde95a07abf54be42f86c",
+            measurementId: "G-YH5ET7LGS8"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // App State
+        let currentUser = null;
+        let userRole = null;
+        let currentView = 'auth';
+        let sections = [];
+        let students = [];
+        let attendanceSessions = [];
+        let activeSession = null;
+        let activeSection = null;
+
+        // DOM Elements
+        const appContainer = document.getElementById('app');
+
+        // Initialize the app
+        function initApp() {
+            renderAuthScreen();
+            setupAuthStateListener();
+        }
+
+        // Auth State Listener
+        function setupAuthStateListener() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await fetchUserData();
+                    renderDashboard();
+                } else {
+                    currentUser = null;
+                    userRole = null;
+                    renderAuthScreen();
+                }
+            });
+        }
+
+        // Fetch User Data
+        async function fetchUserData() {
+            try {
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists) {
+                    userRole = userDoc.data().role;
+
+                    if (userRole === 'teacher') {
+                        const sectionsSnapshot = await db.collection('sections')
+                            .where('teacherId', '==', currentUser.uid)
+                            .get();
+                        sections = sectionsSnapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+
+                        // Fetch students for each section
+                        for (let section of sections) {
+                            const studentsSnapshot = await db.collection('users')
+                                .where('sections', 'array-contains', section.id)
+                                .where('role', '==', 'student')
+                                .get();
+                            students = studentsSnapshot.docs.map(doc => ({
+                                id: doc.id,
+                                ...doc.data()
+                            }));
+                        }
+                    } else if (userRole === 'student') {
+                        const userData = userDoc.data();
+                        sections = [];
+
+                        if (userData.sections && userData.sections.length > 0) {
+                            const sectionsSnapshot = await db.collection('sections')
+                                .where(firebase.firestore.FieldPath.documentId(), 'in', userData.sections)
+                                .get();
+                            sections = sectionsSnapshot.docs.map(doc => ({
+                                id: doc.id,
+                                ...doc.data()
+                            }));
+                        }
+                    }
+                }
+            } catch (error) {
+                showError('Failed to fetch user data. Please try again.');
+                console.error('Error fetching user data:', error);
+            }
+        }
+
+        // Render Auth Screen
+        function renderAuthScreen() {
+            currentView = 'auth';
+            appContainer.innerHTML = `
+                <div class="auth-container">
+                    <div class="auth-card card">
+                        <div class="auth-header">
+                            <h1>NearCheck Lite</h1>
+                            <p>Real-time smart geolocation attendance system</p>
+                        </div>
+                        <div id="auth-content"></div>
+                    </div>
+                </div>
+            `;
+
+            renderRoleSelection();
+        }
+
+        // Render Role Selection
+        function renderRoleSelection() {
+            const authContent = document.getElementById('auth-content');
+            authContent.innerHTML = `
+                <div class="role-selector">
+                    <button class="role-button" id="teacher-role-btn">
+                        <span>I'm a Teacher</span>
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </button>
+                    <button class="role-button" id="student-role-btn">
+                        <span>I'm a Student</span>
+                        <i class="fas fa-user-graduate"></i>
+                    </button>
+                </div>
+                <div class="auth-footer">
+                    Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+                </div>
+            `;
+
+            document.getElementById('teacher-role-btn').addEventListener('click', () => renderSignUpForm('teacher'));
+            document.getElementById('student-role-btn').addEventListener('click', () => renderSignUpForm('student'));
+            document.getElementById('sign-in-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                renderSignInForm();
+            });
+        }
+
+        // Render Sign Up Form
+        function renderSignUpForm(role) {
+            const authContent = document.getElementById('auth-content');
+
+            if (role === 'teacher') {
+                authContent.innerHTML = `
+                    <form id="signup-form">
+                        <div class="input-group">
+                            <label for="fullname">Full Name</label>
+                            <input type="text" id="fullname" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required minlength="6">
+                        </div>
+                        <div class="input-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" required minlength="6">
+                        </div>
+                        <div class="input-group">
+                            <label for="birthdate">Birthdate (Must be 20+)</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="birthdate-day" placeholder="DD" maxlength="2" style="flex: 1;">
+                                <input type="text" id="birthdate-month" placeholder="MM" maxlength="2" style="flex: 1;">
+                                <input type="text" id="birthdate-year" placeholder="YYYY" maxlength="4" style="flex: 2;">
+                            </div>
+                        </div>
+                        <button type="submit" class="button button-primary">Create Account</button>
+                    </form>
+                    <div class="auth-footer">
+                        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+                    </div>
+                `;
+
+                // Add input masking and auto-tab for birthdate
+                setupDateInputs();
+            } else {
+                // Student sign up
+                authContent.innerHTML = `
+                    <form id="signup-form">
+                        <div class="input-group">
+                            <label for="fullname">Full Name</label>
+                            <input type="text" id="fullname" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required minlength="6">
+                        </div>
+                        <div class="input-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" required minlength="6">
+                        </div>
+                        <div class="input-group">
+                            <label for="section-id">Section ID</label>
+                            <input type="text" id="section-id">
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="age-confirm" required> I confirm I'm 13 years or older
+                            </label>
+                        </div>
+                        <button type="submit" class="button button-primary">Continue</button>
+                    </form>
+                    <div class="auth-footer">
+                        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+                    </div>
+                `;
+
+                // Try to get section ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const sectionId = urlParams.get('sectionid');
+                if (sectionId) {
+                    document.getElementById('section-id').value = sectionId;
+                }
+            }
+
+            document.getElementById('signup-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleSignUp(role);
+            });
+
+            document.getElementById('sign-in-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                renderSignInForm();
+            });
+        }
+
+        // Helper function for date input formatting
+        function setupDateInputs() {
+            const dayInput = document.getElementById('birthdate-day');
+            const monthInput = document.getElementById('birthdate-month');
+            const yearInput = document.getElementById('birthdate-year');
+
+            // Auto-tab between fields
+            dayInput.addEventListener('input', function() {
+                if (this.value.length === 2) {
+                    monthInput.focus();
+                }
+            });
+
+            monthInput.addEventListener('input', function() {
+                if (this.value.length === 2) {
+                    yearInput.focus();
+                }
+            });
+
+            // Only allow numbers
+            [dayInput, monthInput, yearInput].forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key < '0' || e.key > '9') {
+                        e.preventDefault();
+                    }
+                });
+            });
+        }
+
+        // Render Sign In Form
+        function renderSignInForm() {
+            const authContent = document.getElementById('auth-content');
+            authContent.innerHTML = `
+                <form id="signin-form">
+                    <div class="input-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <div class="input-group">
+                        <a href="#" id="forgot-password" style="font-size: 14px; text-align: right;">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="button button-primary">Sign In</button>
+                </form>
+                <div class="auth-footer">
+                    New to NearCheck? <a href="#" id="sign-up-link">Sign up</a>
+                </div>
+            `;
+
+            document.getElementById('signin-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleSignIn();
+            });
+
+            document.getElementById('sign-up-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                renderRoleSelection();
+            });
+
+            document.getElementById('forgot-password').addEventListener('click', (e) => {
+                e.preventDefault();
+                showForgotPasswordModal();
+            });
+        }
+
+        // Handle Sign Up
+        async function handleSignUp(role) {
+            const fullName = document.getElementById('fullname').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            // Additional validation for teachers (age verification)
+            if (role === 'teacher') {
+                const day = document.getElementById('birthdate-day').value;
+                const month = document.getElementById('birthdate-month').value;
+                const year = document.getElementById('birthdate-year').value;
+
+                if (!day || !month || !year) {
+                    showError('Please enter your complete birthdate');
+                    return;
+                }
+
+                // Validate date
+                const birthDate = new Date(`${year}-${month}-${day}`);
+                if (isNaN(birthDate.getTime())) {
+                    showError('Please enter a valid date');
+                    return;
+                }
+
+                // Calculate age
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                if (age < 20) {
+                    showError('You must be at least 20 years old to register as a teacher');
+                    return;
+                }
+            }
+
+            // Additional validation for students (age confirmation)
+            if (role === 'student' && !document.getElementById('age-confirm').checked) {
+                showError('You must confirm you are at least 13 years old');
+                return;
+            }
+
+            try {
+                showLoading('Creating account...');
+
+                // Create user in Firebase Auth
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Save additional user data in Firestore
+                const userData = {
+                    fullName,
+                    email,
+                    role,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (role === 'student') {
+                    const sectionId = document.getElementById('section-id').value;
+                    if (sectionId) {
+                        userData.sections = [sectionId];
+                    } else {
+                        userData.sections = [];
+                    }
+                }
+
+                await db.collection('users').doc(user.uid).set(userData);
+
+                // Update user profile with display name
+                await user.updateProfile({
+                    displayName: fullName
+                });
+
+                hideLoading();
+
+                // Redirect to dashboard
+                currentUser = user;
+                userRole = role;
+                await fetchUserData();
+                renderDashboard();
+            } catch (error) {
+                hideLoading();
+                if (error.code === 'auth/email-already-in-use') {
+                    showError('This email is already registered. Please sign in instead.');
+                } else {
+                    showError(error.message);
+                }
+            }
+        }
+
+        // Handle Sign In
+        async function handleSignIn() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                showLoading('Signing in...');
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                
+                // Update current user with display name if available
+                currentUser = userCredential.user;
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    showError('Invalid email or password');
+                } else {
+                    showError(error.message);
+                }
+            }
+        }
+
+        // Render Dashboard
+        function renderDashboard() {
+            currentView = 'dashboard';
+            appContainer.innerHTML = `
+                <div class="dashboard">
+                    <div class="drawer">
+                        <div class="drawer-header">
+                            <i class="fas fa-bars menu-toggle" id="drawer-toggle"></i>
+                            <h2>NearCheck</h2>
+                        </div>
+                        <div class="drawer-menu">
+                            <a href="#" class="menu-item active" data-view="dashboard">
+                                <i class="fas fa-home"></i>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="#" class="menu-item" data-view="sections">
+                                <i class="fas fa-layer-group"></i>
+                                <span>My Sections</span>
+                            </a>
+                            ${userRole === 'teacher' ? `
+                                <a href="#" class="menu-item" data-view="students">
+                                    <i class="fas fa-users"></i>
+                                    <span>My Students</span>
+                                </a>
+                                <a href="#" class="menu-item" data-view="reports">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Attendance Reports</span>
+                                </a>
+                            ` : ''}
+                            <a href="#" class="menu-item" data-view="account">
+                                <i class="fas fa-user"></i>
+                                <span>Account</span>
+                            </a>
+                        </div>
+                        <div class="drawer-footer">
+                            <button class="button button-danger" id="sign-out-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="main-content">
+                        <div id="content-area"></div>
+                    </div>
+                </div>
+            `;
+
+            // Set up event listeners
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const view = item.getAttribute('data-view');
+                    setActiveMenuItem(view);
+                    renderContent(view);
+                });
+            });
+
+            document.getElementById('sign-out-btn').addEventListener('click', () => {
+                auth.signOut();
+            });
+
+            document.getElementById('drawer-toggle').addEventListener('click', () => {
+                document.querySelector('.drawer').classList.toggle('open');
+            });
+
+            // Render initial content
+            renderContent('dashboard');
+        }
+
+        // Set Active Menu Item
+        function setActiveMenuItem(view) {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-view') === view) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        // Render Content
+        function renderContent(view) {
+            const contentArea = document.getElementById('content-area');
+
+            switch (view) {
+                case 'dashboard':
+                    renderDashboardContent();
+                    break;
+                case 'sections':
+                    renderSectionsContent();
+                    break;
+                case 'students':
+                    renderStudentsContent();
+                    break;
+                case 'reports':
+                    renderReportsContent();
+                    break;
+                case 'account':
+                    renderAccountContent();
+                    break;
+                default:
+                    renderDashboardContent();
+            }
+        }
+
+        // Render Dashboard Content
+        function renderDashboardContent() {
+            const now = new Date();
+            const hours = now.getHours();
+            let greeting = 'Good morning';
+
+            if (hours >= 12 && hours < 17) {
+                greeting = 'Good afternoon';
+            } else if (hours >= 17 || hours < 5) {
+                greeting = 'Good evening';
+            }
+
+            const firstName = currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'User';
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="header">
+                    <h1>Dashboard</h1>
+                    ${userRole === 'teacher' ? `
+                        <div class="header-actions">
+                            <button class="button button-primary" id="create-section-btn">
+                                <i class="fas fa-plus"></i>
+                                <span>Create Section</span>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="greeting">
+                    <h2>${greeting}, ${firstName}</h2>
+                    <p>${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                
+                ${sections.length > 0 ? `
+                    <div class="section-carousel">
+                        ${sections.map(section => `
+                            <div class="section-card card" data-section-id="${section.id}">
+                                <div class="section-menu">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </div>
+                                <h3>${section.name}</h3>
+                                <p>${section.subject}</p>
+                                <span class="section-id">${section.id}</span>
+                                ${userRole === 'teacher' ? `
+                                    <p>${section.students ? section.students.length : 0} students</p>
+                                    <div class="section-actions">
+                                        <button class="button button-primary start-session-btn">Start Session</button>
+                                    </div>
+                                ` : `
+                                    <div class="teacher-info">
+                                        <div class="teacher-avatar">${section.teacherName ? section.teacherName.charAt(0) : 'T'}</div>
+                                        <span>${section.teacherName || 'Teacher'}</span>
+                                    </div>
+                                    <div class="section-actions">
+                                        <button class="button button-primary checkin-btn">Check In</button>
+                                    </div>
+                                `}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="card text-center" style="padding: 40px;">
+                        <h3>No Sections Found</h3>
+                        <p>${userRole === 'teacher' ? 'Create your first section to get started' : 'Join a section using an invitation link from your teacher'}</p>
+                        ${userRole === 'teacher' ? `
+                            <button class="button button-primary mt-4" id="create-section-btn-2">Create Section</button>
+                        ` : `
+                            <button class="button button-primary mt-4" id="join-section-btn">Join Section</button>
+                        `}
+                    </div>
+                `}
+            `;
+
+            // Set up event listeners
+            if (userRole === 'teacher') {
+                const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
+                if (createSectionBtn) {
+                    createSectionBtn.addEventListener('click', () => showCreateSectionModal());
+                }
+
+                document.querySelectorAll('.start-session-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.section-card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        showStartSessionModal(section);
+                    });
+                });
+            } else {
+                const joinSectionBtn = document.getElementById('join-section-btn');
+                if (joinSectionBtn) {
+                    joinSectionBtn.addEventListener('click', () => renderSectionsContent());
+                }
+
+                document.querySelectorAll('.checkin-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.section-card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        handleStudentCheckIn(section);
+                    });
+                });
+            }
+        }
+
+        // Render Sections Content
+        function renderSectionsContent() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="header">
+                    <h1>My Sections</h1>
+                    ${userRole === 'teacher' ? `
+                        <div class="header-actions">
+                            <button class="button button-primary" id="create-section-btn">
+                                <i class="fas fa-plus"></i>
+                                <span>Create Section</span>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${sections.length > 0 ? `
+                    <div class="section-list">
+                        ${sections.map(section => `
+                            <div class="card mb-4" data-section-id="${section.id}">
+                                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h3>${section.name}</h3>
+                                    <div class="section-menu">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </div>
+                                </div>
+                                <p>${section.subject}</p>
+                                <p><strong>Schedule:</strong> ${section.schedule}</p>
+                                <p><strong>Section ID:</strong> ${section.id}</p>
+                                
+                                ${userRole === 'teacher' ? `
+                                    <div class="section-actions mt-4" style="display: flex; gap: 8px;">
+                                        <button class="button button-primary invite-students-btn">
+                                            <i class="fas fa-user-plus"></i>
+                                            <span>Invite Students</span>
+                                        </button>
+                                        <button class="button button-secondary manage-students-btn">
+                                            <i class="fas fa-users-cog"></i>
+                                            <span>Manage Students</span>
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="card text-center" style="padding: 40px;">
+                        <h3>No Sections Found</h3>
+                        <p>${userRole === 'teacher' ? 'Create your first section to get started' : 'Join a section using an invitation link from your teacher'}</p>
+                        ${userRole === 'teacher' ? `
+                            <button class="button button-primary mt-4" id="create-section-btn-2">Create Section</button>
+                        ` : `
+                            <div class="input-group mt-4">
+                                <input type="text" id="join-section-input" placeholder="Enter Section ID">
+                                <button class="button button-primary" id="join-section-btn">Join Section</button>
+                            </div>
+                        `}
+                    </div>
+                `}
+            `;
+
+            // Set up event listeners
+            if (userRole === 'teacher') {
+                const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
+                if (createSectionBtn) {
+                    createSectionBtn.addEventListener('click', () => showCreateSectionModal());
+                }
+
+                document.querySelectorAll('.invite-students-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        showInviteStudentsModal(section);
+                    });
+                });
+
+                document.querySelectorAll('.manage-students-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        showManageStudentsModal(section);
+                    });
+                });
+            } else {
+                const joinSectionBtn = document.getElementById('join-section-btn');
+                if (joinSectionBtn) {
+                    joinSectionBtn.addEventListener('click', async () => {
+                        const sectionId = document.getElementById('join-section-input').value;
+                        if (!sectionId) {
+                            showError('Please enter a section ID');
+                            return;
+                        }
+
+                        try {
+                            showLoading('Joining section...');
+
+                            // Verify section exists
+                            const sectionDoc = await db.collection('sections').doc(sectionId).get();
+                            if (!sectionDoc.exists) {
+                                throw new Error('Section not found. Please check the ID and try again.');
+                            }
+
+                            // Add section to user's sections array
+                            await db.collection('users').doc(currentUser.uid).update({
+                                sections: firebase.firestore.FieldValue.arrayUnion(sectionId)
+                            });
+
+                            // Refresh data
+                            await fetchUserData();
+                            hideLoading();
+                            renderContent('sections');
+                        } catch (error) {
+                            hideLoading();
+                            showError(error.message);
+                        }
+                    });
+                }
+            }
+        }
+
+        // Render Students Content (Teacher only)
+        function renderStudentsContent() {
+            if (userRole !== 'teacher') return;
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="header">
+                    <h1>My Students</h1>
+                </div>
+                
+                ${students.length > 0 ? `
+                    <div class="students-list">
+                        ${students.map(student => `
+                            <div class="card mb-4" data-student-id="${student.id}">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h3>${student.fullName}</h3>
+                                    <div class="student-menu">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </div>
+                                </div>
+                                <p>${student.email}</p>
+                                <p>Sections: ${student.sections ? student.sections.length : 0}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="card text-center" style="padding: 40px;">
+                        <h3>No Students Found</h3>
+                        <p>Students will appear here once they join your sections</p>
+                    </div>
+                `}
+            `;
+        }
+
+        // Render Reports Content (Teacher only)
+        function renderReportsContent() {
+            if (userRole !== 'teacher') return;
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="header">
+                    <h1>Attendance Reports</h1>
+                    <div class="header-actions">
+                        <button class="button button-primary" id="export-reports-btn">
+                            <i class="fas fa-file-export"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="reports-filters mb-4">
+                    <div style="display: flex; gap: 12px;">
+                        <select class="input-group" id="report-section-filter">
+                            <option value="">All Sections</option>
+                            ${sections.map(section => `
+                                <option value="${section.id}">${section.name}</option>
+                            `).join('')}
+                        </select>
+                        <select class="input-group" id="report-time-filter">
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="reports-summary card mb-4">
+                    <h3>Summary</h3>
+                    <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+                        <div class="summary-item">
+                            <p>Total Students</p>
+                            <h2>${students.length}</h2>
+                        </div>
+                        <div class="summary-item">
+                            <p>Average Attendance</p>
+                            <h2>85%</h2>
+                        </div>
+                        <div class="summary-item">
+                            <p>Sessions</p>
+                            <h2>12</h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="reports-chart card" style="padding: 20px; height: 300px;">
+                    <h3>Attendance Trend</h3>
+                    <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <p>Chart will be displayed here</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('export-reports-btn').addEventListener('click', () => {
+                showExportReportsModal();
+            });
+
+            // Show/hide custom date range inputs
+            document.getElementById('report-time-filter').addEventListener('change', (e) => {
+                const customRangeGroup = document.getElementById('custom-range-group');
+                if (e.target.value === 'custom' && customRangeGroup) {
+                    customRangeGroup.style.display = 'block';
+                } else if (customRangeGroup) {
+                    customRangeGroup.style.display = 'none';
+                }
+            });
+        }
+
+        // Render Account Content
+        function renderAccountContent() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="header">
+                    <h1>Account Settings</h1>
+                </div>
+                
+                <div class="card mb-4">
+                    <h3 class="mb-4">Personal Information</h3>
+                    <div class="input-group">
+                        <label for="account-name">Full Name</label>
+                        <input type="text" id="account-name" value="${currentUser.displayName || ''}">
+                    </div>
+                    <div class="input-group">
+                        <label for="account-email">Email</label>
+                        <input type="email" id="account-email" value="${currentUser.email}" disabled>
+                    </div>
+                    <button class="button button-primary" id="save-account-btn">Save Changes</button>
+                </div>
+                
+                <div class="card mb-4">
+                    <h3 class="mb-4">Security</h3>
+                    <button class="button button-secondary" id="change-password-btn">Change Password</button>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">Danger Zone</h3>
+                    <button class="button button-danger" id="delete-account-btn">Delete Account</button>
+                </div>
+            `;
+
+            document.getElementById('save-account-btn').addEventListener('click', async () => {
+                const newName = document.getElementById('account-name').value;
+
+                try {
+                    showLoading('Updating account...');
+                    await currentUser.updateProfile({
+                        displayName: newName
+                    });
+
+                    await db.collection('users').doc(currentUser.uid).update({
+                        fullName: newName
+                    });
+
+                    hideLoading();
+                    showSuccess('Account updated successfully');
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+
+            document.getElementById('change-password-btn').addEventListener('click', () => {
+                showChangePasswordModal();
+            });
+
+            document.getElementById('delete-account-btn').addEventListener('click', () => {
+                showDeleteAccountModal();
+            });
+        }
+
+        // Show Create Section Modal
+        function showCreateSectionModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Create New Section</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="create-section-form">
+                            <div class="input-group">
+                                <label for="section-name">Section Name</label>
+                                <input type="text" id="section-name" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="section-subject">Subject</label>
+                                <input type="text" id="section-subject" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="section-schedule">Schedule</label>
+                                <input type="text" id="section-schedule" placeholder="e.g. Mon, Wed, Fri 9:00-10:30 AM" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="section-range">Check-in Range (meters)</label>
+                                <input type="number" id="section-range" value="50" min="5" max="150" required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-secondary" id="cancel-section-btn">Cancel</button>
+                        <button class="button button-primary" id="create-section-btn">Create Section</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#cancel-section-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#create-section-btn').addEventListener('click', async () => {
+                const name = document.getElementById('section-name').value;
+                const subject = document.getElementById('section-subject').value;
+                const schedule = document.getElementById('section-schedule').value;
+                const range = parseInt(document.getElementById('section-range').value);
+
+                if (!name || !subject || !schedule || !range) {
+                    showError('Please fill all fields');
+                    return;
+                }
+
+                try {
+                    showLoading('Creating section...');
+
+                    // Get teacher's current location
+                    const position = await getCurrentPosition();
+
+                    // Create section in Firestore
+                    const sectionRef = await db.collection('sections').add({
+                        name,
+                        subject,
+                        schedule,
+                        checkInRange: range,
+                        teacherId: currentUser.uid,
+                        teacherName: currentUser.displayName || 'Teacher',
+                        teacherLocation: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        students: []
+                    });
+
+                    // Update local state
+                    sections.push({
+                        id: sectionRef.id,
+                        name,
+                        subject,
+                        schedule,
+                        checkInRange: range,
+                        teacherId: currentUser.uid
+                    });
+
+                    hideLoading();
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.remove();
+                    }, 300);
+
+                    renderContent('sections');
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+        }
+
+        // Show Start Session Modal
+        function showStartSessionModal(section) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Start Attendance Session</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>You're about to start an attendance session for <strong>${section.name}</strong>.</p>
+                        
+                        <div class="input-group mt-4">
+                            <label for="session-duration">Session Duration (minutes)</label>
+                            <input type="number" id="session-duration" value="15" min="1" max="120">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="auto-end-checkbox" checked> Auto-end session after duration
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-secondary" id="cancel-session-btn">Cancel</button>
+                        <button class="button button-primary" id="start-session-btn">Start Session</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#cancel-session-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#start-session-btn').addEventListener('click', async () => {
+                const duration = parseInt(document.getElementById('session-duration').value);
+                const autoEnd = document.getElementById('auto-end-checkbox').checked;
+
+                try {
+                    showLoading('Starting session...');
+
+                    // Get teacher's current location
+                    const position = await getCurrentPosition();
+
+                    // Create session in Firestore
+                    const sessionRef = await db.collection('sessions').add({
+                        sectionId: section.id,
+                        teacherId: currentUser.uid,
+                        startTime: firebase.firestore.FieldValue.serverTimestamp(),
+                        endTime: null,
+                        duration,
+                        autoEnd,
+                        location: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                        range: section.checkInRange,
+                        status: 'active',
+                        attendees: []
+                    });
+
+                    // Update local state
+                    activeSession = {
+                        id: sessionRef.id,
+                        sectionId: section.id,
+                        startTime: new Date(),
+                        duration,
+                        autoEnd,
+                        status: 'active'
+                    };
+
+                    hideLoading();
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.remove();
+                    }, 300);
+
+                    renderDashboardContent();
+
+                    // If auto-end is enabled, set timeout to end session
+                    if (autoEnd) {
+                        setTimeout(() => {
+                            endSession(sessionRef.id);
+                        }, duration * 60 * 1000);
+                    }
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+        }
+
+        // End Session
+        async function endSession(sessionId) {
+            try {
+                await db.collection('sessions').doc(sessionId).update({
+                    status: 'ended',
+                    endTime: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                activeSession = null;
+                renderDashboardContent();
+            } catch (error) {
+                showError('Failed to end session: ' + error.message);
+            }
+        }
+
+        // Show Invite Students Modal
+        function showInviteStudentsModal(section) {
+            const inviteLink = `${window.location.origin}${window.location.pathname}?sectionid=${section.id}`;
+            const qr = qrcode(0, 'L');
+            qr.addData(inviteLink);
+            qr.make();
+            const qrSvg = qr.createSvgTag(4);
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Invite Students to ${section.name}</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="qr-code-container">
+                            <div class="qr-code" id="qr-code">${qrSvg}</div>
+                            <p>Scan this QR code to join</p>
+                        </div>
+                        
+                        <div class="input-group mt-4">
+                            <label for="invite-link">Invitation Link</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="invite-link" value="${inviteLink}" readonly>
+                                <button class="button button-secondary" id="copy-link-btn">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="section-id">Section ID</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="section-id" value="${section.id}" readonly>
+                                <button class="button button-secondary" id="copy-id-btn">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-primary" id="done-invite-btn">Done</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#copy-link-btn').addEventListener('click', () => {
+                const linkInput = document.getElementById('invite-link');
+                linkInput.select();
+                document.execCommand('copy');
+                showSuccess('Link copied to clipboard');
+            });
+
+            modal.querySelector('#copy-id-btn').addEventListener('click', () => {
+                const idInput = document.getElementById('section-id');
+                idInput.select();
+                document.execCommand('copy');
+                showSuccess('Section ID copied to clipboard');
+            });
+
+            modal.querySelector('#done-invite-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+        }
+
+        // Show Manage Students Modal
+        function showManageStudentsModal(section) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Manage Students - ${section.name}</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #ddd;">
+                                        <th style="text-align: left; padding: 8px;">Student</th>
+                                        <th style="text-align: left; padding: 8px;">Status</th>
+                                        <th style="text-align: left; padding: 8px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-list">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; padding: 16px;">Loading students...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-primary" id="done-manage-btn">Done</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Fetch students for this section
+            const studentsList = modal.querySelector('#students-list');
+
+            db.collection('users')
+                .where('sections', 'array-contains', section.id)
+                .where('role', '==', 'student')
+                .get()
+                .then((querySnapshot) => {
+                    studentsList.innerHTML = '';
+
+                    if (querySnapshot.empty) {
+                        studentsList.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    querySnapshot.forEach((doc) => {
+                        const student = doc.data();
+                        studentsList.innerHTML += `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 12px 8px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #007AFF; color: white; display: flex; align-items: center; justify-content: center;">
+                                            ${student.fullName ? student.fullName.charAt(0) : 'S'}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
+                                            <div style="font-size: 12px; color: #636366;">${student.email}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 12px 8px;">
+                                    <span style="padding: 4px 8px; background-color: #34C759; color: white; border-radius: 4px; font-size: 12px;">Active</span>
+                                </td>
+                                <td style="padding: 12px 8px;">
+                                    <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
+                                        Remove
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    // Set up event listeners for remove buttons
+                    modal.querySelectorAll('button[data-student-id]').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const studentId = e.target.getAttribute('data-student-id');
+                            if (confirm('Are you sure you want to remove this student from the section?')) {
+                                try {
+                                    showLoading('Removing student...');
+
+                                    // Remove section from student's sections array
+                                    await db.collection('users').doc(studentId).update({
+                                        sections: firebase.firestore.FieldValue.arrayRemove(section.id)
+                                    });
+
+                                    // Refresh the list
+                                    const querySnapshot = await db.collection('users')
+                                        .where('sections', 'array-contains', section.id)
+                                        .where('role', '==', 'student')
+                                        .get();
+
+                                    studentsList.innerHTML = '';
+
+                                    if (querySnapshot.empty) {
+                                        studentsList.innerHTML = `
+                                            <tr>
+                                                <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
+                                            </tr>
+                                        `;
+                                    } else {
+                                        querySnapshot.forEach((doc) => {
+                                            const student = doc.data();
+                                            studentsList.innerHTML += `
+                                                <tr style="border-bottom: 1px solid #eee;">
+                                                    <td style="padding: 12px 8px;">
+                                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                                            <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #007AFF; color: white; display: flex; align-items: center; justify-content: center;">
+                                                                ${student.fullName ? student.fullName.charAt(0) : 'S'}
+                                                            </div>
+                                                            <div>
+                                                                <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
+                                                                <div style="font-size: 12px; color: #636366;">${student.email}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding: 12px 8px;">
+                                                        <span style="padding: 4px 8px; background-color: #34C759; color: white; border-radius: 4px; font-size: 12px;">Active</span>
+                                                    </td>
+                                                    <td style="padding: 12px 8px;">
+                                                        <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
+                                                            Remove
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        });
+
+                                        // Reattach event listeners
+                                        modal.querySelectorAll('button[data-student-id]').forEach(btn => {
+                                            btn.addEventListener('click', async (e) => {
+                                                const studentId = e.target.getAttribute('data-student-id');
+                                                if (confirm('Are you sure you want to remove this student from the section?')) {
+                                                    try {
+                                                        showLoading('Removing student...');
+                                                        await db.collection('users').doc(studentId).update({
+                                                            sections: firebase.firestore.FieldValue.arrayRemove(section.id)
+                                                        });
+                                                        // Refresh the list again
+                                                        showManageStudentsModal(section);
+                                                        hideLoading();
+                                                    } catch (error) {
+                                                        hideLoading();
+                                                        showError('Failed to remove student: ' + error.message);
+                                                    }
+                                                }
+                                            });
+                                        });
+                                    }
+
+                                    hideLoading();
+                                } catch (error) {
+                                    hideLoading();
+                                    showError('Failed to remove student: ' + error.message);
+                                }
+                            }
+                        });
+                    });
+                })
+                .catch((error) => {
+                    studentsList.innerHTML = `
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 16px; color: #FF3B30;">Error loading students: ${error.message}</td>
+                        </tr>
+                    `;
+                });
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#done-manage-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+        }
+
+        // Show Export Reports Modal
+        function showExportReportsModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Export Attendance Data</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group">
+                            <label for="export-format">Format</label>
+                            <select id="export-format">
+                                <option value="excel">Excel (.xlsx)</option>
+                                <option value="csv">CSV (.csv)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="export-time-range">Time Range</label>
+                            <select id="export-time-range">
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group" id="custom-range-group" style="display: none;">
+                            <label for="export-start-date">Start Date</label>
+                            <input type="date" id="export-start-date">
+                            
+                            <label for="export-end-date" style="margin-top: 8px;">End Date</label>
+                            <input type="date" id="export-end-date">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="export-section">Section</label>
+                            <select id="export-section">
+                                <option value="all">All Sections</option>
+                                ${sections.map(section => `
+                                    <option value="${section.id}">${section.name}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-secondary" id="cancel-export-btn">Cancel</button>
+                        <button class="button button-primary" id="export-data-btn">Export Data</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#cancel-export-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#export-time-range').addEventListener('change', (e) => {
+                const customRangeGroup = modal.querySelector('#custom-range-group');
+                if (e.target.value === 'custom') {
+                    customRangeGroup.style.display = 'block';
+                } else {
+                    customRangeGroup.style.display = 'none';
+                }
+            });
+
+            modal.querySelector('#export-data-btn').addEventListener('click', () => {
+                // In a real app, this would generate and download the report
+                // For this demo, we'll just show a success message
+                showSuccess('Export request received. Data will be downloaded shortly.');
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+        }
+
+        // Show Change Password Modal
+        function showChangePasswordModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Change Password</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group">
+                            <label for="current-password">Current Password</label>
+                            <input type="password" id="current-password" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="new-password">New Password</label>
+                            <input type="password" id="new-password" required minlength="6">
+                        </div>
+                        <div class="input-group">
+                            <label for="confirm-new-password">Confirm New Password</label>
+                            <input type="password" id="confirm-new-password" required minlength="6">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-secondary" id="cancel-password-btn">Cancel</button>
+                        <button class="button button-primary" id="save-password-btn">Change Password</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#cancel-password-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#save-password-btn').addEventListener('click', async () => {
+                const currentPassword = document.getElementById('current-password').value;
+                const newPassword = document.getElementById('new-password').value;
+                const confirmNewPassword = document.getElementById('confirm-new-password').value;
+
+                if (newPassword !== confirmNewPassword) {
+                    showError('New passwords do not match');
+                    return;
+                }
+
+                try {
+                    showLoading('Changing password...');
+
+                    // Reauthenticate user
+                    const credential = firebase.auth.EmailAuthProvider.credential(
+                        currentUser.email,
+                        currentPassword
+                    );
+
+                    await currentUser.reauthenticateWithCredential(credential);
+
+                    // Update password
+                    await currentUser.updatePassword(newPassword);
+
+                    hideLoading();
+                    showSuccess('Password changed successfully');
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.remove();
+                    }, 300);
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+        }
+
+        // Show Delete Account Modal
+        function showDeleteAccountModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Delete Account</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                        <p>All your data will be permanently removed.</p>
+                        
+                        <div class="input-group mt-4">
+                            <label for="delete-password">Enter your password to confirm</label>
+                            <input type="password" id="delete-password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-secondary" id="cancel-delete-btn">Cancel</button>
+                        <button class="button button-danger" id="confirm-delete-btn">Delete Account</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#cancel-delete-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#confirm-delete-btn').addEventListener('click', async () => {
+                const password = document.getElementById('delete-password').value;
+
+                try {
+                    showLoading('Deleting account...');
+
+                    // Reauthenticate user
+                    const credential = firebase.auth.EmailAuthProvider.credential(
+                        currentUser.email,
+                        password
+                    );
+
+                    await currentUser.reauthenticateWithCredential(credential);
+
+                    // Delete user from Firebase Auth
+                    await currentUser.delete();
+
+                    // Delete user data from Firestore
+                    await db.collection('users').doc(currentUser.uid).delete();
+
+                    hideLoading();
+
+                    // User will be automatically signed out by the auth state listener
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+        }
+
+        // Show Forgot Password Modal
+        function showForgotPasswordModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>Reset Password</h2>
+                        <button class="close-button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Enter your email address and we'll send you a link to reset your password.</p>
+                        
+                        <div class="input-group mt-4">
+                            <label for="reset-email">Email</label>
+                            <input type="email" id="reset-email" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="button button-secondary" id="cancel-reset-btn">Cancel</button>
+                        <button class="button button-primary" id="send-reset-btn">Send Reset Link</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            modal.querySelector('.close-button').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#cancel-reset-btn').addEventListener('click', () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            });
+
+            modal.querySelector('#send-reset-btn').addEventListener('click', async () => {
+                const email = document.getElementById('reset-email').value;
+
+                try {
+                    showLoading('Sending reset link...');
+                    await auth.sendPasswordResetEmail(email);
+                    hideLoading();
+                    showSuccess('Password reset link sent to your email');
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.remove();
+                    }, 300);
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message);
+                }
+            });
+        }
+
+        // Handle Student Check-In
+        async function handleStudentCheckIn(section) {
+            try {
+                showLoading('Verifying location...');
+
+                // Check if there's an active session for this section
+                const sessionsSnapshot = await db.collection('sessions')
+                    .where('sectionId', '==', section.id)
+                    .where('status', '==', 'active')
+                    .get();
+
+                if (sessionsSnapshot.empty) {
+                    throw new Error('No active session found for this section');
+                }
+
+                const session = sessionsSnapshot.docs[0].data();
+                const sessionId = sessionsSnapshot.docs[0].id;
+
+                // Get student's current location
+                const position = await getCurrentPosition();
+                const studentLocation = new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude);
+
+                // Calculate distance between teacher and student
+                const distance = calculateDistance(
+                    session.location.latitude,
+                    session.location.longitude,
+                    studentLocation.latitude,
+                    studentLocation.longitude
+                );
+
+                if (distance > session.range) {
+                    throw new Error(`You are too far from the check-in location (${Math.round(distance)}m away, maximum is ${session.range}m)`);
+                }
+
+                // Record attendance
+                await db.collection('attendance').add({
+                    sessionId,
+                    sectionId: section.id,
+                    studentId: currentUser.uid,
+                    studentName: currentUser.displayName || 'Student',
+                    checkInTime: firebase.firestore.FieldValue.serverTimestamp(),
+                    location: studentLocation,
+                    distance,
+                    status: 'present',
+                    deviceInfo: navigator.userAgent
+                });
+
+                // Add to session attendees
+                await db.collection('sessions').doc(sessionId).update({
+                    attendees: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+                });
+
+                hideLoading();
+                showSuccess('Checked in successfully!');
+            } catch (error) {
+                hideLoading();
+                showError(error.message);
+            }
+        }
+
+        // Get Current Position
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation is not supported by your browser'));
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => resolve(position),
+                    (error) => reject(new Error(`Geolocation error: ${error.message}`)), {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        // Calculate Distance Between Two Points (in meters)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        // Show Loading Indicator
+        function showLoading(message = 'Loading...') {
+            let loading = document.getElementById('loading-overlay');
+
+            if (!loading) {
+                loading = document.createElement('div');
+                loading.id = 'loading-overlay';
+                loading.style.position = 'fixed';
+                loading.style.top = '0';
+                loading.style.left = '0';
+                loading.style.right = '0';
+                loading.style.bottom = '0';
+                loading.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                loading.style.display = 'flex';
+                loading.style.alignItems = 'center';
+                loading.style.justifyContent = 'center';
+                loading.style.zIndex = '1000';
+                loading.style.color = 'white';
+                loading.style.fontSize = '18px';
+                loading.style.backdropFilter = 'blur(4px)';
+
+                loading.innerHTML = `
+                    <div style="text-align: center;">
+                        <div class="spinner" style="width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; margin: 0 auto 16px;"></div>
+                        <p>${message}</p>
+                    </div>
+                `;
+
+                document.body.appendChild(loading);
+
+                // Add spin animation
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            } else {
+                loading.querySelector('p').textContent = message;
+                loading.style.display = 'flex';
+            }
+        }
+
+        // Hide Loading Indicator
+        function hideLoading() {
+            const loading = document.getElementById('loading-overlay');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Show Error Message
+        function showError(message) {
+            const error = document.createElement('div');
+            error.className = 'error-message';
+            error.style.position = 'fixed';
+            error.style.bottom = '20px';
+            error.style.left = '50%';
+            error.style.transform = 'translateX(-50%)';
+            error.style.backgroundColor = 'var(--error)';
+            error.style.color = 'white';
+            error.style.padding = '12px 24px';
+            error.style.borderRadius = 'var(--border-radius)';
+            error.style.boxShadow = 'var(--box-shadow)';
+            error.style.zIndex = '1000';
+            error.style.display = 'flex';
+            error.style.alignItems = 'center';
+            error.style.gap = '8px';
+            error.style.animation = 'fadeIn 0.3s ease-out forwards';
+
+            error.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(error);
+
+            setTimeout(() => {
+                error.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    error.remove();
+                }, 300);
+            }, 5000);
+
+            // Add animations if not already present
+            if (!document.getElementById('error-animations')) {
+                const style = document.createElement('style');
+                style.id = 'error-animations';
+                style.innerHTML = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    }
+                    @keyframes fadeOut {
+                        from { opacity: 1; transform: translateX(-50%) translateY(0); }
+                        to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // Show Success Message
+        function showSuccess(message) {
+            const success = document.createElement('div');
+            success.className = 'success-message';
+            success.style.position = 'fixed';
+            success.style.bottom = '20px';
+            success.style.left = '50%';
+            success.style.transform = 'translateX(-50%)';
+            success.style.backgroundColor = 'var(--success)';
+            success.style.color = 'white';
+            success.style.padding = '12px 24px';
+            success.style.borderRadius = 'var(--border-radius)';
+            success.style.boxShadow = 'var(--box-shadow)';
+            success.style.zIndex = '1000';
+            success.style.display = 'flex';
+            success.style.alignItems = 'center';
+            success.style.gap = '8px';
+            success.style.animation = 'fadeIn 0.3s ease-out forwards';
+
+            success.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(success);
+
+            setTimeout(() => {
+                success.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    success.remove();
+                }, 300);
+            }, 5000);
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
