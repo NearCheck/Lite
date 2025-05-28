@@ -9,16 +9,27 @@
         :root {
             --primary: #007AFF;
             --primary-dark: #0062CC;
+            --primary-light: rgba(0, 122, 255, 0.1);
             --secondary: #34C759;
             --error: #FF3B30;
+            --error-light: rgba(255, 59, 48, 0.1);
             --warning: #FF9500;
+            --warning-light: rgba(255, 149, 0, 0.1);
             --success: #34C759;
+            --success-light: rgba(52, 199, 89, 0.1);
             --text: #1C1C1E;
             --text-secondary: #636366;
+            --text-tertiary: #8E8E93;
             --background: #F2F2F7;
             --card-background: #FFFFFF;
-            --border-radius: 8px;
-            --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --border-color: #E5E5EA;
+            --border-radius: 12px;
+            --border-radius-sm: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --box-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --sidebar-width: 280px;
+            --header-height: 64px;
         }
 
         * {
@@ -32,11 +43,34 @@
             background-color: var(--background);
             color: var(--text);
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        p {
+            color: var(--text-secondary);
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        a:hover {
+            opacity: 0.8;
+        }
+
+        /* Buttons */
         .button {
             padding: 10px 16px;
-            border-radius: var(--border-radius);
+            border-radius: var(--border-radius-sm);
             border: none;
             font-weight: 500;
             font-size: 14px;
@@ -45,7 +79,19 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: all 0.2s ease;
+            transition: var(--transition);
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .button:focus {
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
         }
 
         .button-primary {
@@ -64,7 +110,7 @@
         }
 
         .button-secondary:hover {
-            background-color: rgba(0, 122, 255, 0.1);
+            background-color: var(--primary-light);
         }
 
         .button-danger {
@@ -76,16 +122,42 @@
             background-color: #D70015;
         }
 
+        .button-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .button-success:hover {
+            background-color: #2DBE50;
+        }
+
+        .button-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .button-warning:hover {
+            background-color: #E68A00;
+        }
+
+        /* Cards */
         .card {
             background-color: var(--card-background);
             border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            padding: 16px;
+            box-shadow: var(--box-shadow-sm);
+            padding: 20px;
             margin-bottom: 16px;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
         }
 
+        .card:hover {
+            box-shadow: var(--box-shadow);
+        }
+
+        /* Inputs */
         .input-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .input-group label {
@@ -100,11 +172,12 @@
         .input-group select,
         .input-group textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #D1D1D6;
-            border-radius: var(--border-radius);
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
             font-size: 16px;
-            transition: border 0.2s ease;
+            transition: var(--transition);
+            background-color: white;
         }
 
         .input-group input:focus,
@@ -112,6 +185,13 @@
         .input-group textarea:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .input-group .input-hint {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
         }
 
         /* Auth Screen */
@@ -121,12 +201,16 @@
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            background-color: var(--background);
         }
 
         .auth-card {
             width: 100%;
-            max-width: 400px;
-            padding: 32px;
+            max-width: 440px;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            background-color: var(--card-background);
         }
 
         .auth-header {
@@ -135,13 +219,29 @@
         }
 
         .auth-header h1 {
-            font-size: 24px;
+            font-size: 28px;
             margin-bottom: 8px;
+            color: var(--primary);
         }
 
         .auth-header p {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .auth-logo {
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 24px;
+            font-weight: bold;
         }
 
         .role-selector {
@@ -153,119 +253,142 @@
 
         .role-button {
             padding: 16px;
-            border-radius: var(--border-radius);
-            border: 1px solid #D1D1D6;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color);
             background-color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: var(--transition);
+            text-align: left;
         }
 
         .role-button:hover {
             border-color: var(--primary);
-            background-color: rgba(0, 122, 255, 0.05);
+            background-color: var(--primary-light);
+        }
+
+        .role-button i {
+            color: var(--primary);
+            font-size: 20px;
         }
 
         .auth-footer {
             text-align: center;
-            margin-top: 16px;
+            margin-top: 24px;
             color: var(--text-secondary);
             font-size: 14px;
         }
 
-        .auth-footer a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        /* Dashboard */
+        /* Dashboard Layout */
         .dashboard {
             display: flex;
             min-height: 100vh;
+            position: relative;
         }
 
+        /* Sidebar */
         .drawer {
-            width: 250px;
+            width: var(--sidebar-width);
             background-color: var(--card-background);
             box-shadow: var(--box-shadow);
-            transition: transform 0.3s ease;
             position: fixed;
             height: 100vh;
             z-index: 100;
-        }
-
-        .drawer.open {
-            transform: translateX(0);
+            transition: transform 0.3s ease;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
         }
 
         .drawer-header {
-            padding: 16px;
+            padding: 20px;
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom: 1px solid #F2F2F7;
+            border-bottom: 1px solid var(--border-color);
+            height: var(--header-height);
         }
 
         .drawer-header h2 {
             font-size: 18px;
+            color: var(--primary);
         }
 
         .menu-toggle {
             cursor: pointer;
             font-size: 18px;
             color: var(--text-secondary);
+            display: none;
+            background: none;
+            border: none;
         }
 
         .drawer-menu {
             padding: 16px 0;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .menu-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 16px;
+            padding: 12px 20px;
             text-decoration: none;
             color: var(--text-secondary);
-            font-size: 14px;
-            transition: all 0.2s ease;
+            font-size: 15px;
+            transition: var(--transition);
+            margin: 0 8px;
+            border-radius: var(--border-radius-sm);
         }
 
         .menu-item.active {
             color: var(--primary);
-            background-color: rgba(0, 122, 255, 0.1);
+            background-color: var(--primary-light);
+            font-weight: 500;
         }
 
         .menu-item:hover:not(.active) {
-            background-color: rgba(0, 0, 0, 0.05);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .menu-item i {
+            width: 20px;
+            text-align: center;
         }
 
         .drawer-footer {
             padding: 16px;
-            position: absolute;
-            bottom: 0;
-            width: 100%;
+            border-top: 1px solid var(--border-color);
         }
 
+        /* Main Content */
         .main-content {
             flex: 1;
-            margin-left: 250px;
-            padding: 24px;
+            margin-left: var(--sidebar-width);
             transition: margin 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .header {
+        .content-header {
+            padding: 20px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            background-color: var(--card-background);
+            border-bottom: 1px solid var(--border-color);
+            height: var(--header-height);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        .header h1 {
-            font-size: 24px;
+        .content-header h1 {
+            font-size: 20px;
         }
 
         .header-actions {
@@ -273,8 +396,18 @@
             gap: 8px;
         }
 
+        .content-body {
+            flex: 1;
+            padding: 24px;
+            background-color: var(--background);
+        }
+
         .greeting {
             margin-bottom: 24px;
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow-sm);
         }
 
         .greeting h2 {
@@ -284,19 +417,20 @@
 
         .greeting p {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 15px;
         }
 
+        /* Section Cards */
         .section-carousel {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }
 
         .section-card {
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: var(--transition);
             position: relative;
         }
 
@@ -306,15 +440,27 @@
 
         .section-menu {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 16px;
+            right: 16px;
             color: var(--text-secondary);
             cursor: pointer;
+            background: rgba(255, 255, 255, 0.8);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .section-menu:hover {
+            background: rgba(0, 0, 0, 0.05);
         }
 
         .section-card h3 {
             margin-bottom: 8px;
-            font-size: 16px;
+            font-size: 17px;
         }
 
         .section-card p {
@@ -325,16 +471,19 @@
 
         .section-id {
             display: inline-block;
-            background-color: #F2F2F7;
+            background-color: var(--background);
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
             color: var(--text-secondary);
             margin: 8px 0;
+            font-family: monospace;
         }
 
         .section-actions {
             margin-top: 16px;
+            display: flex;
+            gap: 8px;
         }
 
         .teacher-info {
@@ -345,8 +494,8 @@
         }
 
         .teacher-avatar {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background-color: var(--primary);
             color: white;
@@ -357,7 +506,62 @@
             font-weight: bold;
         }
 
-        /* Modal */
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow-sm);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: var(--text-tertiary);
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            margin-bottom: 16px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Status Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-primary {
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .badge-success {
+            background-color: var(--success-light);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background-color: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background-color: var(--error-light);
+            color: var(--error);
+        }
+
+        /* Modals */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -372,6 +576,7 @@
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
         }
 
         .modal-overlay.active {
@@ -389,6 +594,7 @@
             margin: 20px;
             transform: translateY(20px);
             transition: transform 0.3s ease;
+            box-shadow: var(--box-shadow);
         }
 
         .modal-overlay.active .modal {
@@ -396,15 +602,19 @@
         }
 
         .modal-header {
-            padding: 16px;
-            border-bottom: 1px solid #F2F2F7;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 1;
         }
 
         .modal-header h2 {
-            font-size: 18px;
+            font-size: 20px;
         }
 
         .close-button {
@@ -413,43 +623,96 @@
             font-size: 24px;
             cursor: pointer;
             color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .close-button:hover {
+            background-color: rgba(0, 0, 0, 0.05);
         }
 
         .modal-body {
-            padding: 16px;
+            padding: 20px;
         }
 
         .modal-footer {
-            padding: 16px;
-            border-top: 1px solid #F2F2F7;
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: flex-end;
-            gap: 8px;
+            gap: 12px;
+            position: sticky;
+            bottom: 0;
+            background-color: white;
         }
 
+        /* QR Code */
         .qr-code-container {
             text-align: center;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .qr-code {
             display: inline-block;
             background-color: white;
             padding: 16px;
-            border-radius: var(--border-radius);
+            border-radius: var(--border-radius-sm);
             margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background-color: var(--background);
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
         }
 
         /* Responsive Styles */
-        @media (max-width: 768px) {
+        @media (max-width: 992px) {
             .drawer {
                 transform: translateX(-100%);
-                width: 280px;
+            }
+
+            .drawer.open {
+                transform: translateX(0);
             }
 
             .main-content {
                 margin-left: 0;
-                padding: 16px;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .auth-card {
+                padding: 30px;
             }
 
             .section-carousel {
@@ -460,17 +723,45 @@
                 margin: 10px;
                 max-height: 80vh;
             }
+
+            .content-body {
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .auth-card {
+                padding: 24px;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: flex-end;
+            }
+
+            .section-actions {
+                flex-direction: column;
+            }
+
+            .modal-footer {
+                flex-direction: column-reverse;
+                gap: 8px;
+            }
+
+            .modal-footer .button {
+                width: 100%;
+            }
         }
 
         /* Animations */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes fadeOut {
             from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(20px); }
+            to { opacity: 0; transform: translateY(10px); }
         }
 
         @keyframes slideIn {
@@ -479,9 +770,19 @@
         }
 
         /* Utility Classes */
+        .mt-2 { margin-top: 8px; }
         .mt-4 { margin-top: 16px; }
+        .mt-6 { margin-top: 24px; }
+        .mb-2 { margin-bottom: 8px; }
         .mb-4 { margin-bottom: 16px; }
+        .mb-6 { margin-bottom: 24px; }
         .text-center { text-align: center; }
+        .text-muted { color: var(--text-secondary); }
+        .d-flex { display: flex; }
+        .align-items-center { align-items: center; }
+        .justify-content-between { justify-content: space-between; }
+        .w-100 { width: 100%; }
+        .animated { animation: fadeIn 0.3s ease-out forwards; }
     </style>
 </head>
 <body>
@@ -520,6 +821,7 @@
         let attendanceSessions = [];
         let activeSession = null;
         let activeSection = null;
+        let geolocationPermission = null;
 
         // DOM Elements
         const appContainer = document.getElementById('app');
@@ -528,6 +830,25 @@
         function initApp() {
             renderAuthScreen();
             setupAuthStateListener();
+            checkGeolocationPermission();
+        }
+
+        // Check geolocation permission state
+        function checkGeolocationPermission() {
+            if (navigator.permissions) {
+                navigator.permissions.query({ name: 'geolocation' })
+                    .then(permissionStatus => {
+                        geolocationPermission = permissionStatus.state;
+                        permissionStatus.onchange = () => {
+                            geolocationPermission = permissionStatus.state;
+                        };
+                    })
+                    .catch(() => {
+                        geolocationPermission = 'prompt';
+                    });
+            } else {
+                geolocationPermission = 'prompt';
+            }
         }
 
         // Auth State Listener
@@ -548,6 +869,8 @@
         // Fetch User Data
         async function fetchUserData() {
             try {
+                showLoading('Loading your data...');
+                
                 const userDoc = await db.collection('users').doc(currentUser.uid).get();
                 if (userDoc.exists) {
                     userRole = userDoc.data().role;
@@ -562,16 +885,19 @@
                         }));
 
                         // Fetch students for each section
-                        for (let section of sections) {
+                        const studentsPromises = sections.map(async section => {
                             const studentsSnapshot = await db.collection('users')
                                 .where('sections', 'array-contains', section.id)
                                 .where('role', '==', 'student')
                                 .get();
-                            students = studentsSnapshot.docs.map(doc => ({
+                            return studentsSnapshot.docs.map(doc => ({
                                 id: doc.id,
                                 ...doc.data()
                             }));
-                        }
+                        });
+
+                        const studentsArrays = await Promise.all(studentsPromises);
+                        students = studentsArrays.flat();
                     } else if (userRole === 'student') {
                         const userData = userDoc.data();
                         sections = [];
@@ -587,8 +913,11 @@
                         }
                     }
                 }
+                
+                hideLoading();
             } catch (error) {
-                showError('Failed to fetch user data. Please try again.');
+                hideLoading();
+                showError('Failed to fetch user data. Please refresh the page to try again.');
                 console.error('Error fetching user data:', error);
             }
         }
@@ -600,8 +929,9 @@
                 <div class="auth-container">
                     <div class="auth-card card">
                         <div class="auth-header">
+                            <div class="auth-logo">NC</div>
                             <h1>NearCheck Lite</h1>
-                            <p>Real-time smart geolocation attendance system</p>
+                            <p>Smart geolocation-based attendance system for educators and students</p>
                         </div>
                         <div id="auth-content"></div>
                     </div>
@@ -616,13 +946,13 @@
             const authContent = document.getElementById('auth-content');
             authContent.innerHTML = `
                 <div class="role-selector">
-                    <button class="role-button" id="teacher-role-btn">
+                    <button class="role-button" id="teacher-role-btn" aria-label="I'm a Teacher">
                         <span>I'm a Teacher</span>
-                        <i class="fas fa-chalkboard-teacher"></i>
+                        <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
                     </button>
-                    <button class="role-button" id="student-role-btn">
+                    <button class="role-button" id="student-role-btn" aria-label="I'm a Student">
                         <span>I'm a Student</span>
-                        <i class="fas fa-user-graduate"></i>
+                        <i class="fas fa-user-graduate" aria-hidden="true"></i>
                     </button>
                 </div>
                 <div class="auth-footer">
@@ -647,29 +977,30 @@
                     <form id="signup-form">
                         <div class="input-group">
                             <label for="fullname">Full Name</label>
-                            <input type="text" id="fullname" required>
+                            <input type="text" id="fullname" required aria-required="true">
                         </div>
                         <div class="input-group">
                             <label for="email">Email</label>
-                            <input type="email" id="email" required>
+                            <input type="email" id="email" required aria-required="true">
                         </div>
                         <div class="input-group">
                             <label for="password">Password</label>
-                            <input type="password" id="password" required minlength="6">
+                            <input type="password" id="password" required minlength="6" aria-required="true">
+                            <p class="input-hint">Minimum 6 characters</p>
                         </div>
                         <div class="input-group">
                             <label for="confirm-password">Confirm Password</label>
-                            <input type="password" id="confirm-password" required minlength="6">
+                            <input type="password" id="confirm-password" required minlength="6" aria-required="true">
                         </div>
                         <div class="input-group">
                             <label for="birthdate">Birthdate (Must be 20+)</label>
                             <div style="display: flex; gap: 8px;">
-                                <input type="text" id="birthdate-day" placeholder="DD" maxlength="2" style="flex: 1;">
-                                <input type="text" id="birthdate-month" placeholder="MM" maxlength="2" style="flex: 1;">
-                                <input type="text" id="birthdate-year" placeholder="YYYY" maxlength="4" style="flex: 2;">
+                                <input type="text" id="birthdate-day" placeholder="DD" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+                                <input type="text" id="birthdate-month" placeholder="MM" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+                                <input type="text" id="birthdate-year" placeholder="YYYY" maxlength="4" style="flex: 2;" pattern="[0-9]*" inputmode="numeric">
                             </div>
                         </div>
-                        <button type="submit" class="button button-primary">Create Account</button>
+                        <button type="submit" class="button button-primary w-100 mt-4">Create Account</button>
                     </form>
                     <div class="auth-footer">
                         Already have an account? <a href="#" id="sign-in-link">Sign in</a>
@@ -684,30 +1015,32 @@
                     <form id="signup-form">
                         <div class="input-group">
                             <label for="fullname">Full Name</label>
-                            <input type="text" id="fullname" required>
+                            <input type="text" id="fullname" required aria-required="true">
                         </div>
                         <div class="input-group">
                             <label for="email">Email</label>
-                            <input type="email" id="email" required>
+                            <input type="email" id="email" required aria-required="true">
                         </div>
                         <div class="input-group">
                             <label for="password">Password</label>
-                            <input type="password" id="password" required minlength="6">
+                            <input type="password" id="password" required minlength="6" aria-required="true">
+                            <p class="input-hint">Minimum 6 characters</p>
                         </div>
                         <div class="input-group">
                             <label for="confirm-password">Confirm Password</label>
-                            <input type="password" id="confirm-password" required minlength="6">
+                            <input type="password" id="confirm-password" required minlength="6" aria-required="true">
                         </div>
                         <div class="input-group">
-                            <label for="section-id">Section ID</label>
-                            <input type="text" id="section-id">
+                            <label for="section-id">Section ID (optional)</label>
+                            <input type="text" id="section-id" placeholder="Provided by your teacher">
                         </div>
                         <div class="input-group">
                             <label>
-                                <input type="checkbox" id="age-confirm" required> I confirm I'm 13 years or older
+                                <input type="checkbox" id="age-confirm" required aria-required="true"> 
+                                I confirm I'm 13 years or older
                             </label>
                         </div>
-                        <button type="submit" class="button button-primary">Continue</button>
+                        <button type="submit" class="button button-primary w-100 mt-4">Continue</button>
                     </form>
                     <div class="auth-footer">
                         Already have an account? <a href="#" id="sign-in-link">Sign in</a>
@@ -759,6 +1092,14 @@
                         e.preventDefault();
                     }
                 });
+
+                // Prevent paste of non-numeric values
+                input.addEventListener('paste', function(e) {
+                    const pasteData = e.clipboardData.getData('text');
+                    if (!/^\d+$/.test(pasteData)) {
+                        e.preventDefault();
+                    }
+                });
             });
         }
 
@@ -769,16 +1110,16 @@
                 <form id="signin-form">
                     <div class="input-group">
                         <label for="email">Email</label>
-                        <input type="email" id="email" required>
+                        <input type="email" id="email" required aria-required="true">
                     </div>
                     <div class="input-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" required>
+                        <input type="password" id="password" required aria-required="true">
                     </div>
                     <div class="input-group">
-                        <a href="#" id="forgot-password" style="font-size: 14px; text-align: right;">Forgot password?</a>
+                        <a href="#" id="forgot-password" style="font-size: 14px; text-align: right; display: block;">Forgot password?</a>
                     </div>
-                    <button type="submit" class="button button-primary">Sign In</button>
+                    <button type="submit" class="button button-primary w-100">Sign In</button>
                 </form>
                 <div class="auth-footer">
                     New to NearCheck? <a href="#" id="sign-up-link">Sign up</a>
@@ -803,10 +1144,15 @@
 
         // Handle Sign Up
         async function handleSignUp(role) {
-            const fullName = document.getElementById('fullname').value;
-            const email = document.getElementById('email').value;
+            const fullName = document.getElementById('fullname').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!fullName || !email || !password || !confirmPassword) {
+                showError('Please fill all required fields');
+                return;
+            }
 
             if (password !== confirmPassword) {
                 showError('Passwords do not match');
@@ -867,7 +1213,7 @@
                 };
 
                 if (role === 'student') {
-                    const sectionId = document.getElementById('section-id').value;
+                    const sectionId = document.getElementById('section-id').value.trim();
                     if (sectionId) {
                         userData.sections = [sectionId];
                     } else {
@@ -893,16 +1239,25 @@
                 hideLoading();
                 if (error.code === 'auth/email-already-in-use') {
                     showError('This email is already registered. Please sign in instead.');
+                } else if (error.code === 'auth/weak-password') {
+                    showError('Password should be at least 6 characters');
+                } else if (error.code === 'auth/invalid-email') {
+                    showError('Please enter a valid email address');
                 } else {
-                    showError(error.message);
+                    showError(error.message || 'Account creation failed. Please try again.');
                 }
             }
         }
 
         // Handle Sign In
         async function handleSignIn() {
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('Please enter both email and password');
+                return;
+            }
 
             try {
                 showLoading('Signing in...');
@@ -914,10 +1269,14 @@
                 hideLoading();
             } catch (error) {
                 hideLoading();
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    showError('Invalid email or password');
+                if (error.code === 'auth/user-not-found') {
+                    showError('No account found with this email. Please sign up.');
+                } else if (error.code === 'auth/wrong-password') {
+                    showError('Incorrect password. Please try again.');
+                } else if (error.code === 'auth/too-many-requests') {
+                    showError('Too many failed attempts. Please try again later or reset your password.');
                 } else {
-                    showError(error.message);
+                    showError(error.message || 'Sign in failed. Please try again.');
                 }
             }
         }
@@ -929,11 +1288,13 @@
                 <div class="dashboard">
                     <div class="drawer">
                         <div class="drawer-header">
-                            <i class="fas fa-bars menu-toggle" id="drawer-toggle"></i>
+                            <button class="menu-toggle" id="drawer-toggle" aria-label="Toggle menu">
+                                <i class="fas fa-bars"></i>
+                            </button>
                             <h2>NearCheck</h2>
                         </div>
                         <div class="drawer-menu">
-                            <a href="#" class="menu-item active" data-view="dashboard">
+                            <a href="#" class="menu-item active" data-view="dashboard" aria-current="page">
                                 <i class="fas fa-home"></i>
                                 <span>Dashboard</span>
                             </a>
@@ -951,6 +1312,10 @@
                                     <span>Attendance Reports</span>
                                 </a>
                             ` : ''}
+                            <a href="#" class="menu-item" data-view="permissions">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Permissions</span>
+                            </a>
                             <a href="#" class="menu-item" data-view="account">
                                 <i class="fas fa-user"></i>
                                 <span>Account</span>
@@ -964,7 +1329,13 @@
                         </div>
                     </div>
                     <div class="main-content">
-                        <div id="content-area"></div>
+                        <div class="content-header">
+                            <h1>Dashboard</h1>
+                            <button class="menu-toggle" id="mobile-drawer-toggle" aria-label="Toggle menu">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
+                        <div class="content-body" id="content-area"></div>
                     </div>
                 </div>
             `;
@@ -983,20 +1354,39 @@
                 auth.signOut();
             });
 
-            document.getElementById('drawer-toggle').addEventListener('click', () => {
-                document.querySelector('.drawer').classList.toggle('open');
-            });
+            document.getElementById('drawer-toggle').addEventListener('click', toggleDrawer);
+            document.getElementById('mobile-drawer-toggle').addEventListener('click', toggleDrawer);
+
+            // Initialize responsive drawer state
+            updateDrawerState();
 
             // Render initial content
             renderContent('dashboard');
+        }
+
+        // Toggle drawer visibility
+        function toggleDrawer() {
+            document.querySelector('.drawer').classList.toggle('open');
+        }
+
+        // Update drawer state based on screen size
+        function updateDrawerState() {
+            const drawer = document.querySelector('.drawer');
+            if (window.innerWidth >= 992) {
+                drawer.classList.add('open');
+            } else {
+                drawer.classList.remove('open');
+            }
         }
 
         // Set Active Menu Item
         function setActiveMenuItem(view) {
             document.querySelectorAll('.menu-item').forEach(item => {
                 item.classList.remove('active');
+                item.removeAttribute('aria-current');
                 if (item.getAttribute('data-view') === view) {
                     item.classList.add('active');
+                    item.setAttribute('aria-current', 'page');
                 }
             });
         }
@@ -1004,6 +1394,10 @@
         // Render Content
         function renderContent(view) {
             const contentArea = document.getElementById('content-area');
+            if (!contentArea) return;
+
+            // Update page title
+            document.querySelector('.content-header h1').textContent = view.charAt(0).toUpperCase() + view.slice(1).replace(/-/g, ' ');
 
             switch (view) {
                 case 'dashboard':
@@ -1017,6 +1411,9 @@
                     break;
                 case 'reports':
                     renderReportsContent();
+                    break;
+                case 'permissions':
+                    renderPermissionsContent();
                     break;
                 case 'account':
                     renderAccountContent();
@@ -1042,28 +1439,25 @@
 
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
-                <div class="header">
-                    <h1>Dashboard</h1>
-                    ${userRole === 'teacher' ? `
-                        <div class="header-actions">
-                            <button class="button button-primary" id="create-section-btn">
-                                <i class="fas fa-plus"></i>
-                                <span>Create Section</span>
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
-                
                 <div class="greeting">
                     <h2>${greeting}, ${firstName}</h2>
                     <p>${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
                 
+                ${userRole === 'teacher' ? `
+                    <div class="header-actions" style="margin-bottom: 24px;">
+                        <button class="button button-primary" id="create-section-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>Create Section</span>
+                        </button>
+                    </div>
+                ` : ''}
+                
                 ${sections.length > 0 ? `
                     <div class="section-carousel">
                         ${sections.map(section => `
                             <div class="section-card card" data-section-id="${section.id}">
-                                <div class="section-menu">
+                                <div class="section-menu" aria-label="Section options">
                                     <i class="fas fa-ellipsis-v"></i>
                                 </div>
                                 <h3>${section.name}</h3>
@@ -1072,7 +1466,9 @@
                                 ${userRole === 'teacher' ? `
                                     <p>${section.students ? section.students.length : 0} students</p>
                                     <div class="section-actions">
-                                        <button class="button button-primary start-session-btn">Start Session</button>
+                                        <button class="button button-primary start-session-btn" aria-label="Start attendance session for ${section.name}">
+                                            Start Session
+                                        </button>
                                     </div>
                                 ` : `
                                     <div class="teacher-info">
@@ -1080,20 +1476,27 @@
                                         <span>${section.teacherName || 'Teacher'}</span>
                                     </div>
                                     <div class="section-actions">
-                                        <button class="button button-primary checkin-btn">Check In</button>
+                                        <button class="button button-primary checkin-btn" aria-label="Check in to ${section.name}">
+                                            Check In
+                                        </button>
                                     </div>
                                 `}
                             </div>
                         `).join('')}
                     </div>
                 ` : `
-                    <div class="card text-center" style="padding: 40px;">
+                    <div class="empty-state">
+                        <i class="fas fa-layer-group"></i>
                         <h3>No Sections Found</h3>
-                        <p>${userRole === 'teacher' ? 'Create your first section to get started' : 'Join a section using an invitation link from your teacher'}</p>
+                        <p>${userRole === 'teacher' ? 'Create your first section to get started with attendance tracking' : 'Join a section using an invitation link from your teacher to begin checking in'}</p>
                         ${userRole === 'teacher' ? `
-                            <button class="button button-primary mt-4" id="create-section-btn-2">Create Section</button>
+                            <button class="button button-primary mt-4" id="create-section-btn-2">
+                                Create Section
+                            </button>
                         ` : `
-                            <button class="button button-primary mt-4" id="join-section-btn">Join Section</button>
+                            <button class="button button-primary mt-4" id="join-section-btn">
+                                Join Section
+                            </button>
                         `}
                     </div>
                 `}
@@ -1135,31 +1538,28 @@
         function renderSectionsContent() {
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
-                <div class="header">
-                    <h1>My Sections</h1>
-                    ${userRole === 'teacher' ? `
-                        <div class="header-actions">
-                            <button class="button button-primary" id="create-section-btn">
-                                <i class="fas fa-plus"></i>
-                                <span>Create Section</span>
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
+                ${userRole === 'teacher' ? `
+                    <div class="header-actions" style="margin-bottom: 24px;">
+                        <button class="button button-primary" id="create-section-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>Create Section</span>
+                        </button>
+                    </div>
+                ` : ''}
                 
                 ${sections.length > 0 ? `
                     <div class="section-list">
                         ${sections.map(section => `
                             <div class="card mb-4" data-section-id="${section.id}">
-                                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="d-flex align-items-center justify-content-between">
                                     <h3>${section.name}</h3>
-                                    <div class="section-menu">
+                                    <div class="section-menu" aria-label="Section options">
                                         <i class="fas fa-ellipsis-v"></i>
                                     </div>
                                 </div>
-                                <p>${section.subject}</p>
+                                <p class="text-muted">${section.subject}</p>
                                 <p><strong>Schedule:</strong> ${section.schedule}</p>
-                                <p><strong>Section ID:</strong> ${section.id}</p>
+                                <p><strong>Section ID:</strong> <span class="section-id">${section.id}</span></p>
                                 
                                 ${userRole === 'teacher' ? `
                                     <div class="section-actions mt-4" style="display: flex; gap: 8px;">
@@ -1177,16 +1577,22 @@
                         `).join('')}
                     </div>
                 ` : `
-                    <div class="card text-center" style="padding: 40px;">
+                    <div class="empty-state">
+                        <i class="fas fa-layer-group"></i>
                         <h3>No Sections Found</h3>
-                        <p>${userRole === 'teacher' ? 'Create your first section to get started' : 'Join a section using an invitation link from your teacher'}</p>
+                        <p>${userRole === 'teacher' ? 'Create your first section to start managing attendance' : 'Join a section to begin checking in to classes'}</p>
                         ${userRole === 'teacher' ? `
-                            <button class="button button-primary mt-4" id="create-section-btn-2">Create Section</button>
+                            <button class="button button-primary mt-4" id="create-section-btn-2">
+                                Create Section
+                            </button>
                         ` : `
                             <div class="input-group mt-4">
                                 <input type="text" id="join-section-input" placeholder="Enter Section ID">
-                                <button class="button button-primary" id="join-section-btn">Join Section</button>
+                                <button class="button button-primary w-100" id="join-section-btn">
+                                    Join Section
+                                </button>
                             </div>
+                            <p class="text-center text-muted mt-2">Get the section ID from your teacher</p>
                         `}
                     </div>
                 `}
@@ -1220,7 +1626,7 @@
                 const joinSectionBtn = document.getElementById('join-section-btn');
                 if (joinSectionBtn) {
                     joinSectionBtn.addEventListener('click', async () => {
-                        const sectionId = document.getElementById('join-section-input').value;
+                        const sectionId = document.getElementById('join-section-input').value.trim();
                         if (!sectionId) {
                             showError('Please enter a section ID');
                             return;
@@ -1259,32 +1665,43 @@
 
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
-                <div class="header">
-                    <h1>My Students</h1>
-                </div>
-                
                 ${students.length > 0 ? `
                     <div class="students-list">
                         ${students.map(student => `
                             <div class="card mb-4" data-student-id="${student.id}">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="d-flex align-items-center justify-content-between">
                                     <h3>${student.fullName}</h3>
-                                    <div class="student-menu">
+                                    <div class="student-menu" aria-label="Student options">
                                         <i class="fas fa-ellipsis-v"></i>
                                     </div>
                                 </div>
-                                <p>${student.email}</p>
+                                <p class="text-muted">${student.email}</p>
                                 <p>Sections: ${student.sections ? student.sections.length : 0}</p>
                             </div>
                         `).join('')}
                     </div>
                 ` : `
-                    <div class="card text-center" style="padding: 40px;">
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
                         <h3>No Students Found</h3>
-                        <p>Students will appear here once they join your sections</p>
+                        <p>Students will appear here once they join your sections. Invite students to your sections to get started.</p>
+                        <button class="button button-primary mt-4" id="invite-students-btn">
+                            Invite Students
+                        </button>
                     </div>
                 `}
             `;
+
+            const inviteStudentsBtn = document.getElementById('invite-students-btn');
+            if (inviteStudentsBtn) {
+                inviteStudentsBtn.addEventListener('click', () => {
+                    if (sections.length > 0) {
+                        renderContent('sections');
+                    } else {
+                        showCreateSectionModal();
+                    }
+                });
+            }
         }
 
         // Render Reports Content (Teacher only)
@@ -1293,14 +1710,11 @@
 
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
-                <div class="header">
-                    <h1>Attendance Reports</h1>
-                    <div class="header-actions">
-                        <button class="button button-primary" id="export-reports-btn">
-                            <i class="fas fa-file-export"></i>
-                            <span>Export</span>
-                        </button>
-                    </div>
+                <div class="header-actions" style="margin-bottom: 24px;">
+                    <button class="button button-primary" id="export-reports-btn">
+                        <i class="fas fa-file-export"></i>
+                        <span>Export</span>
+                    </button>
                 </div>
                 
                 <div class="reports-filters mb-4">
@@ -1360,14 +1774,83 @@
             });
         }
 
+        // Render Permissions Content
+        function renderPermissionsContent() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="card mb-4">
+                    <h3 class="mb-4">Geolocation Access</h3>
+                    <p>NearCheck Lite requires geolocation access to verify your location when checking in to classes.</p>
+                    
+                    <div class="permission-status mt-4">
+                        <h4>Current Status:</h4>
+                        <div id="geolocation-status" class="mt-2">
+                            ${geolocationPermission === 'granted' ? `
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check-circle"></i> Granted
+                                </span>
+                                <p class="text-muted mt-2">You've granted location access. You can check in to classes.</p>
+                            ` : geolocationPermission === 'denied' ? `
+                                <span class="badge badge-danger">
+                                    <i class="fas fa-times-circle"></i> Denied
+                                </span>
+                                <p class="text-muted mt-2">You've denied location access. You won't be able to check in to classes.</p>
+                                <button class="button button-primary mt-2" id="open-settings-btn">
+                                    Open Browser Settings
+                                </button>
+                            ` : `
+                                <span class="badge badge-warning">
+                                    <i class="fas fa-question-circle"></i> Not Determined
+                                </span>
+                                <p class="text-muted mt-2">Location access hasn't been requested yet. It will be requested when you try to check in.</p>
+                            `}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">How Location Works</h3>
+                    <p>When you check in to a class, NearCheck Lite will:</p>
+                    <ul style="margin-top: 8px; padding-left: 20px;">
+                        <li>Request permission to access your location (if not already granted)</li>
+                        <li>Compare your location with the teacher's location</li>
+                        <li>Verify you're within the allowed distance (typically 50-100 meters)</li>
+                        <li>Record your attendance with timestamp and location data</li>
+                    </ul>
+                    <p class="mt-4">Your location data is only used for attendance verification and is not stored permanently.</p>
+                </div>
+            `;
+
+            const openSettingsBtn = document.getElementById('open-settings-btn');
+            if (openSettingsBtn) {
+                openSettingsBtn.addEventListener('click', () => {
+                    // This is a best-effort attempt to help users change settings
+                    // Note: There's no standard way to open browser settings, this is just a guide
+                    showModal({
+                        title: 'Change Location Settings',
+                        body: `
+                            <p>To enable location access for NearCheck Lite:</p>
+                            <ol style="margin-top: 8px; padding-left: 20px;">
+                                <li>Open your browser settings</li>
+                                <li>Navigate to Site Settings or Permissions</li>
+                                <li>Find NearCheck Lite in the list of sites</li>
+                                <li>Change the Location permission to "Allow"</li>
+                                <li>Refresh this page</li>
+                            </ol>
+                            <p class="mt-4">The exact steps vary depending on your browser and device.</p>
+                        `,
+                        buttons: [
+                            { text: 'OK', class: 'button-primary', action: 'close' }
+                        ]
+                    });
+                });
+            }
+        }
+
         // Render Account Content
         function renderAccountContent() {
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = `
-                <div class="header">
-                    <h1>Account Settings</h1>
-                </div>
-                
                 <div class="card mb-4">
                     <h3 class="mb-4">Personal Information</h3>
                     <div class="input-group">
@@ -1388,12 +1871,18 @@
                 
                 <div class="card">
                     <h3 class="mb-4">Danger Zone</h3>
+                    <p class="mb-4">Deleting your account will permanently remove all your data from our systems.</p>
                     <button class="button button-danger" id="delete-account-btn">Delete Account</button>
                 </div>
             `;
 
             document.getElementById('save-account-btn').addEventListener('click', async () => {
-                const newName = document.getElementById('account-name').value;
+                const newName = document.getElementById('account-name').value.trim();
+
+                if (!newName) {
+                    showError('Please enter your name');
+                    return;
+                }
 
                 try {
                     showLoading('Updating account...');
@@ -1409,7 +1898,7 @@
                     showSuccess('Account updated successfully');
                 } catch (error) {
                     hideLoading();
-                    showError(error.message);
+                    showError(error.message || 'Failed to update account');
                 }
             });
 
@@ -1424,220 +1913,171 @@
 
         // Show Create Section Modal
         function showCreateSectionModal() {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h2>Create New Section</h2>
-                        <button class="close-button">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="create-section-form">
-                            <div class="input-group">
-                                <label for="section-name">Section Name</label>
-                                <input type="text" id="section-name" required>
-                            </div>
-                            <div class="input-group">
-                                <label for="section-subject">Subject</label>
-                                <input type="text" id="section-subject" required>
-                            </div>
-                            <div class="input-group">
-                                <label for="section-schedule">Schedule</label>
-                                <input type="text" id="section-schedule" placeholder="e.g. Mon, Wed, Fri 9:00-10:30 AM" required>
-                            </div>
-                            <div class="input-group">
-                                <label for="section-range">Check-in Range (meters)</label>
-                                <input type="number" id="section-range" value="50" min="5" max="150" required>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="button button-secondary" id="cancel-section-btn">Cancel</button>
-                        <button class="button button-primary" id="create-section-btn">Create Section</button>
-                    </div>
-                </div>
-            `;
+            showModal({
+                title: 'Create New Section',
+                body: `
+                    <form id="create-section-form">
+                        <div class="input-group">
+                            <label for="section-name">Section Name</label>
+                            <input type="text" id="section-name" required placeholder="e.g. Computer Science 101">
+                        </div>
+                        <div class="input-group">
+                            <label for="section-subject">Subject</label>
+                            <input type="text" id="section-subject" required placeholder="e.g. Computer Science">
+                        </div>
+                        <div class="input-group">
+                            <label for="section-schedule">Schedule</label>
+                            <input type="text" id="section-schedule" placeholder="e.g. Mon, Wed, Fri 9:00-10:30 AM" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="section-range">Check-in Range (meters)</label>
+                            <input type="number" id="section-range" value="50" min="5" max="150" required>
+                            <p class="input-hint">Students must be within this distance to check in</p>
+                        </div>
+                    </form>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Create Section', class: 'button-primary', action: async () => {
+                        const name = document.getElementById('section-name').value.trim();
+                        const subject = document.getElementById('section-subject').value.trim();
+                        const schedule = document.getElementById('section-schedule').value.trim();
+                        const range = parseInt(document.getElementById('section-range').value);
 
-            document.body.appendChild(modal);
+                        if (!name || !subject || !schedule || !range) {
+                            showError('Please fill all fields');
+                            return false;
+                        }
 
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
+                        try {
+                            showLoading('Creating section...');
 
-            // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                            // Get teacher's current location
+                            const position = await getCurrentPositionWithPermission();
 
-            modal.querySelector('#cancel-section-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                            // Create section in Firestore
+                            const sectionRef = await db.collection('sections').add({
+                                name,
+                                subject,
+                                schedule,
+                                checkInRange: range,
+                                teacherId: currentUser.uid,
+                                teacherName: currentUser.displayName || 'Teacher',
+                                teacherLocation: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                students: []
+                            });
 
-            modal.querySelector('#create-section-btn').addEventListener('click', async () => {
-                const name = document.getElementById('section-name').value;
-                const subject = document.getElementById('section-subject').value;
-                const schedule = document.getElementById('section-schedule').value;
-                const range = parseInt(document.getElementById('section-range').value);
+                            // Update local state
+                            sections.push({
+                                id: sectionRef.id,
+                                name,
+                                subject,
+                                schedule,
+                                checkInRange: range,
+                                teacherId: currentUser.uid
+                            });
 
-                if (!name || !subject || !schedule || !range) {
-                    showError('Please fill all fields');
-                    return;
-                }
-
-                try {
-                    showLoading('Creating section...');
-
-                    // Get teacher's current location
-                    const position = await getCurrentPosition();
-
-                    // Create section in Firestore
-                    const sectionRef = await db.collection('sections').add({
-                        name,
-                        subject,
-                        schedule,
-                        checkInRange: range,
-                        teacherId: currentUser.uid,
-                        teacherName: currentUser.displayName || 'Teacher',
-                        teacherLocation: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        students: []
-                    });
-
-                    // Update local state
-                    sections.push({
-                        id: sectionRef.id,
-                        name,
-                        subject,
-                        schedule,
-                        checkInRange: range,
-                        teacherId: currentUser.uid
-                    });
-
-                    hideLoading();
-                    modal.classList.remove('active');
-                    setTimeout(() => {
-                        modal.remove();
-                    }, 300);
-
-                    renderContent('sections');
-                } catch (error) {
-                    hideLoading();
-                    showError(error.message);
-                }
+                            hideLoading();
+                            showSuccess('Section created successfully');
+                            renderContent('sections');
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            showError(error.message || 'Failed to create section');
+                            return false;
+                        }
+                    }}
+                ]
             });
         }
 
         // Show Start Session Modal
         function showStartSessionModal(section) {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h2>Start Attendance Session</h2>
-                        <button class="close-button">&times;</button>
+            showModal({
+                title: `Start Attendance Session - ${section.name}`,
+                body: `
+                    <p>You're about to start an attendance session for <strong>${section.name}</strong>.</p>
+                    
+                    <div class="input-group mt-4">
+                        <label for="session-duration">Session Duration (minutes)</label>
+                        <input type="number" id="session-duration" value="15" min="1" max="120">
                     </div>
-                    <div class="modal-body">
-                        <p>You're about to start an attendance session for <strong>${section.name}</strong>.</p>
-                        
-                        <div class="input-group mt-4">
-                            <label for="session-duration">Session Duration (minutes)</label>
-                            <input type="number" id="session-duration" value="15" min="1" max="120">
-                        </div>
-                        
-                        <div class="input-group">
-                            <label>
-                                <input type="checkbox" id="auto-end-checkbox" checked> Auto-end session after duration
-                            </label>
-                        </div>
+                    
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="auto-end-checkbox" checked> Auto-end session after duration
+                        </label>
                     </div>
-                    <div class="modal-footer">
-                        <button class="button button-secondary" id="cancel-session-btn">Cancel</button>
-                        <button class="button button-primary" id="start-session-btn">Start Session</button>
+                    
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="require-location-checkbox" checked> Require student location
+                        </label>
                     </div>
-                </div>
-            `;
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Start Session', class: 'button-primary', action: async () => {
+                        const duration = parseInt(document.getElementById('session-duration').value);
+                        const autoEnd = document.getElementById('auto-end-checkbox').checked;
+                        const requireLocation = document.getElementById('require-location-checkbox').checked;
 
-            document.body.appendChild(modal);
+                        if (!duration || duration < 1) {
+                            showError('Please enter a valid duration');
+                            return false;
+                        }
 
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
+                        try {
+                            showLoading('Starting session...');
 
-            // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                            // Get teacher's current location
+                            const position = await getCurrentPositionWithPermission();
 
-            modal.querySelector('#cancel-session-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                            // Create session in Firestore
+                            const sessionRef = await db.collection('sessions').add({
+                                sectionId: section.id,
+                                teacherId: currentUser.uid,
+                                startTime: firebase.firestore.FieldValue.serverTimestamp(),
+                                endTime: null,
+                                duration,
+                                autoEnd,
+                                requireLocation,
+                                location: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                                range: section.checkInRange,
+                                status: 'active',
+                                attendees: []
+                            });
 
-            modal.querySelector('#start-session-btn').addEventListener('click', async () => {
-                const duration = parseInt(document.getElementById('session-duration').value);
-                const autoEnd = document.getElementById('auto-end-checkbox').checked;
+                            // Update local state
+                            activeSession = {
+                                id: sessionRef.id,
+                                sectionId: section.id,
+                                startTime: new Date(),
+                                duration,
+                                autoEnd,
+                                status: 'active'
+                            };
 
-                try {
-                    showLoading('Starting session...');
-
-                    // Get teacher's current location
-                    const position = await getCurrentPosition();
-
-                    // Create session in Firestore
-                    const sessionRef = await db.collection('sessions').add({
-                        sectionId: section.id,
-                        teacherId: currentUser.uid,
-                        startTime: firebase.firestore.FieldValue.serverTimestamp(),
-                        endTime: null,
-                        duration,
-                        autoEnd,
-                        location: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
-                        range: section.checkInRange,
-                        status: 'active',
-                        attendees: []
-                    });
-
-                    // Update local state
-                    activeSession = {
-                        id: sessionRef.id,
-                        sectionId: section.id,
-                        startTime: new Date(),
-                        duration,
-                        autoEnd,
-                        status: 'active'
-                    };
-
-                    hideLoading();
-                    modal.classList.remove('active');
-                    setTimeout(() => {
-                        modal.remove();
-                    }, 300);
-
-                    renderDashboardContent();
-
-                    // If auto-end is enabled, set timeout to end session
-                    if (autoEnd) {
-                        setTimeout(() => {
-                            endSession(sessionRef.id);
-                        }, duration * 60 * 1000);
-                    }
-                } catch (error) {
-                    hideLoading();
-                    showError(error.message);
-                }
+                            hideLoading();
+                            showSuccess('Attendance session started');
+                            renderDashboardContent();
+                            
+                            // If auto-end is enabled, set timeout to end session
+                            if (autoEnd) {
+                                setTimeout(() => {
+                                    endSession(sessionRef.id);
+                                }, duration * 60 * 1000);
+                            }
+                            
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            showError(error.message || 'Failed to start session');
+                            return false;
+                        }
+                    }}
+                ]
             });
         }
 
@@ -1651,6 +2091,7 @@
 
                 activeSession = null;
                 renderDashboardContent();
+                showSuccess('Attendance session ended');
             } catch (error) {
                 showError('Failed to end session: ' + error.message);
             }
@@ -1664,560 +2105,417 @@
             qr.make();
             const qrSvg = qr.createSvgTag(4);
 
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h2>Invite Students to ${section.name}</h2>
-                        <button class="close-button">&times;</button>
+            showModal({
+                title: `Invite Students - ${section.name}`,
+                body: `
+                    <div class="qr-code-container">
+                        <div class="qr-code" id="qr-code">${qrSvg}</div>
+                        <p>Scan this QR code to join</p>
                     </div>
-                    <div class="modal-body">
-                        <div class="qr-code-container">
-                            <div class="qr-code" id="qr-code">${qrSvg}</div>
-                            <p>Scan this QR code to join</p>
-                        </div>
-                        
-                        <div class="input-group mt-4">
-                            <label for="invite-link">Invitation Link</label>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="invite-link" value="${inviteLink}" readonly>
-                                <button class="button button-secondary" id="copy-link-btn">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="input-group">
-                            <label for="section-id">Section ID</label>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="section-id" value="${section.id}" readonly>
-                                <button class="button button-secondary" id="copy-id-btn">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
+                    
+                    <div class="input-group mt-4">
+                        <label for="invite-link">Invitation Link</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="invite-link" value="${inviteLink}" readonly>
+                            <button class="button button-secondary" id="copy-link-btn" aria-label="Copy invitation link">
+                                <i class="fas fa-copy"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button class="button button-primary" id="done-invite-btn">Done</button>
+                    
+                    <div class="input-group">
+                        <label for="section-id">Section ID</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="section-id" value="${section.id}" readonly>
+                            <button class="button button-secondary" id="copy-id-btn" aria-label="Copy section ID">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            `;
+                `,
+                buttons: [
+                    { text: 'Done', class: 'button-primary', action: 'close' }
+                ],
+                onRender: (modal) => {
+                    modal.querySelector('#copy-link-btn').addEventListener('click', () => {
+                        const linkInput = document.getElementById('invite-link');
+                        linkInput.select();
+                        document.execCommand('copy');
+                        showSuccess('Link copied to clipboard');
+                    });
 
-            document.body.appendChild(modal);
-
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
-
-            // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
-
-            modal.querySelector('#copy-link-btn').addEventListener('click', () => {
-                const linkInput = document.getElementById('invite-link');
-                linkInput.select();
-                document.execCommand('copy');
-                showSuccess('Link copied to clipboard');
-            });
-
-            modal.querySelector('#copy-id-btn').addEventListener('click', () => {
-                const idInput = document.getElementById('section-id');
-                idInput.select();
-                document.execCommand('copy');
-                showSuccess('Section ID copied to clipboard');
-            });
-
-            modal.querySelector('#done-invite-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
+                    modal.querySelector('#copy-id-btn').addEventListener('click', () => {
+                        const idInput = document.getElementById('section-id');
+                        idInput.select();
+                        document.execCommand('copy');
+                        showSuccess('Section ID copied to clipboard');
+                    });
+                }
             });
         }
 
         // Show Manage Students Modal
         function showManageStudentsModal(section) {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h2>Manage Students - ${section.name}</h2>
-                        <button class="close-button">&times;</button>
+            showModal({
+                title: `Manage Students - ${section.name}`,
+                body: `
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-list">
+                                <tr>
+                                    <td colspan="3" style="text-align: center; padding: 16px;">Loading students...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="modal-body">
-                        <div style="max-height: 400px; overflow-y: auto;">
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="border-bottom: 1px solid #ddd;">
-                                        <th style="text-align: left; padding: 8px;">Student</th>
-                                        <th style="text-align: left; padding: 8px;">Status</th>
-                                        <th style="text-align: left; padding: 8px;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="students-list">
-                                    <tr>
-                                        <td colspan="3" style="text-align: center; padding: 16px;">Loading students...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="button button-primary" id="done-manage-btn">Done</button>
-                    </div>
-                </div>
-            `;
+                `,
+                buttons: [
+                    { text: 'Done', class: 'button-primary', action: 'close' }
+                ],
+                onRender: async (modal) => {
+                    const studentsList = modal.querySelector('#students-list');
 
-            document.body.appendChild(modal);
+                    try {
+                        const querySnapshot = await db.collection('users')
+                            .where('sections', 'array-contains', section.id)
+                            .where('role', '==', 'student')
+                            .get();
 
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
+                        studentsList.innerHTML = '';
 
-            // Fetch students for this section
-            const studentsList = modal.querySelector('#students-list');
+                        if (querySnapshot.empty) {
+                            studentsList.innerHTML = `
+                                <tr>
+                                    <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
+                                </tr>
+                            `;
+                            return;
+                        }
 
-            db.collection('users')
-                .where('sections', 'array-contains', section.id)
-                .where('role', '==', 'student')
-                .get()
-                .then((querySnapshot) => {
-                    studentsList.innerHTML = '';
+                        querySnapshot.forEach((doc) => {
+                            const student = doc.data();
+                            studentsList.innerHTML += `
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center" style="gap: 8px;">
+                                            <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center;">
+                                                ${student.fullName ? student.fullName.charAt(0) : 'S'}
+                                            </div>
+                                            <div>
+                                                <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
+                                                <div style="font-size: 12px; color: var(--text-tertiary);">${student.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-success">Active</span>
+                                    </td>
+                                    <td>
+                                        <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
 
-                    if (querySnapshot.empty) {
+                        // Set up event listeners for remove buttons
+                        modal.querySelectorAll('button[data-student-id]').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                const studentId = e.target.getAttribute('data-student-id');
+                                if (confirm('Are you sure you want to remove this student from the section?')) {
+                                    try {
+                                        showLoading('Removing student...');
+
+                                        // Remove section from student's sections array
+                                        await db.collection('users').doc(studentId).update({
+                                            sections: firebase.firestore.FieldValue.arrayRemove(section.id)
+                                        });
+
+                                        // Refresh the list
+                                        showManageStudentsModal(section);
+                                        hideLoading();
+                                        showSuccess('Student removed from section');
+                                    } catch (error) {
+                                        hideLoading();
+                                        showError('Failed to remove student: ' + error.message);
+                                    }
+                                }
+                            });
+                        });
+                    } catch (error) {
                         studentsList.innerHTML = `
                             <tr>
-                                <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
+                                <td colspan="3" style="text-align: center; padding: 16px; color: var(--error);">Error loading students: ${error.message}</td>
                             </tr>
                         `;
-                        return;
                     }
-
-                    querySnapshot.forEach((doc) => {
-                        const student = doc.data();
-                        studentsList.innerHTML += `
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 12px 8px;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #007AFF; color: white; display: flex; align-items: center; justify-content: center;">
-                                            ${student.fullName ? student.fullName.charAt(0) : 'S'}
-                                        </div>
-                                        <div>
-                                            <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
-                                            <div style="font-size: 12px; color: #636366;">${student.email}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td style="padding: 12px 8px;">
-                                    <span style="padding: 4px 8px; background-color: #34C759; color: white; border-radius: 4px; font-size: 12px;">Active</span>
-                                </td>
-                                <td style="padding: 12px 8px;">
-                                    <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
-                                        Remove
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-
-                    // Set up event listeners for remove buttons
-                    modal.querySelectorAll('button[data-student-id]').forEach(btn => {
-                        btn.addEventListener('click', async (e) => {
-                            const studentId = e.target.getAttribute('data-student-id');
-                            if (confirm('Are you sure you want to remove this student from the section?')) {
-                                try {
-                                    showLoading('Removing student...');
-
-                                    // Remove section from student's sections array
-                                    await db.collection('users').doc(studentId).update({
-                                        sections: firebase.firestore.FieldValue.arrayRemove(section.id)
-                                    });
-
-                                    // Refresh the list
-                                    const querySnapshot = await db.collection('users')
-                                        .where('sections', 'array-contains', section.id)
-                                        .where('role', '==', 'student')
-                                        .get();
-
-                                    studentsList.innerHTML = '';
-
-                                    if (querySnapshot.empty) {
-                                        studentsList.innerHTML = `
-                                            <tr>
-                                                <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
-                                            </tr>
-                                        `;
-                                    } else {
-                                        querySnapshot.forEach((doc) => {
-                                            const student = doc.data();
-                                            studentsList.innerHTML += `
-                                                <tr style="border-bottom: 1px solid #eee;">
-                                                    <td style="padding: 12px 8px;">
-                                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                                            <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #007AFF; color: white; display: flex; align-items: center; justify-content: center;">
-                                                                ${student.fullName ? student.fullName.charAt(0) : 'S'}
-                                                            </div>
-                                                            <div>
-                                                                <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
-                                                                <div style="font-size: 12px; color: #636366;">${student.email}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td style="padding: 12px 8px;">
-                                                        <span style="padding: 4px 8px; background-color: #34C759; color: white; border-radius: 4px; font-size: 12px;">Active</span>
-                                                    </td>
-                                                    <td style="padding: 12px 8px;">
-                                                        <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
-                                                            Remove
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            `;
-                                        });
-
-                                        // Reattach event listeners
-                                        modal.querySelectorAll('button[data-student-id]').forEach(btn => {
-                                            btn.addEventListener('click', async (e) => {
-                                                const studentId = e.target.getAttribute('data-student-id');
-                                                if (confirm('Are you sure you want to remove this student from the section?')) {
-                                                    try {
-                                                        showLoading('Removing student...');
-                                                        await db.collection('users').doc(studentId).update({
-                                                            sections: firebase.firestore.FieldValue.arrayRemove(section.id)
-                                                        });
-                                                        // Refresh the list again
-                                                        showManageStudentsModal(section);
-                                                        hideLoading();
-                                                    } catch (error) {
-                                                        hideLoading();
-                                                        showError('Failed to remove student: ' + error.message);
-                                                    }
-                                                }
-                                            });
-                                        });
-                                    }
-
-                                    hideLoading();
-                                } catch (error) {
-                                    hideLoading();
-                                    showError('Failed to remove student: ' + error.message);
-                                }
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    studentsList.innerHTML = `
-                        <tr>
-                            <td colspan="3" style="text-align: center; padding: 16px; color: #FF3B30;">Error loading students: ${error.message}</td>
-                        </tr>
-                    `;
-                });
-
-            // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
-
-            modal.querySelector('#done-manage-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
+                }
             });
         }
 
         // Show Export Reports Modal
         function showExportReportsModal() {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h2>Export Attendance Data</h2>
-                        <button class="close-button">&times;</button>
+            showModal({
+                title: 'Export Attendance Data',
+                body: `
+                    <div class="input-group">
+                        <label for="export-format">Format</label>
+                        <select id="export-format">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
                     </div>
-                    <div class="modal-body">
-                        <div class="input-group">
-                            <label for="export-format">Format</label>
-                            <select id="export-format">
-                                <option value="excel">Excel (.xlsx)</option>
-                                <option value="csv">CSV (.csv)</option>
-                                <option value="pdf">PDF (.pdf)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="input-group">
-                            <label for="export-time-range">Time Range</label>
-                            <select id="export-time-range">
-                                <option value="week">This Week</option>
-                                <option value="month">This Month</option>
-                                <option value="custom">Custom Range</option>
-                            </select>
-                        </div>
-                        
-                        <div class="input-group" id="custom-range-group" style="display: none;">
-                            <label for="export-start-date">Start Date</label>
-                            <input type="date" id="export-start-date">
-                            
-                            <label for="export-end-date" style="margin-top: 8px;">End Date</label>
-                            <input type="date" id="export-end-date">
-                        </div>
-                        
-                        <div class="input-group">
-                            <label for="export-section">Section</label>
-                            <select id="export-section">
-                                <option value="all">All Sections</option>
-                                ${sections.map(section => `
-                                    <option value="${section.id}">${section.name}</option>
-                                `).join('')}
-                            </select>
-                        </div>
+                    
+                    <div class="input-group">
+                        <label for="export-time-range">Time Range</label>
+                        <select id="export-time-range">
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
                     </div>
-                    <div class="modal-footer">
-                        <button class="button button-secondary" id="cancel-export-btn">Cancel</button>
-                        <button class="button button-primary" id="export-data-btn">Export Data</button>
+                    
+                    <div class="input-group" id="custom-range-group" style="display: none;">
+                        <label for="export-start-date">Start Date</label>
+                        <input type="date" id="export-start-date">
+                        
+                        <label for="export-end-date" style="margin-top: 8px;">End Date</label>
+                        <input type="date" id="export-end-date">
                     </div>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
-
-            // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
-
-            modal.querySelector('#cancel-export-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
-
-            modal.querySelector('#export-time-range').addEventListener('change', (e) => {
-                const customRangeGroup = modal.querySelector('#custom-range-group');
-                if (e.target.value === 'custom') {
-                    customRangeGroup.style.display = 'block';
-                } else {
-                    customRangeGroup.style.display = 'none';
+                    
+                    <div class="input-group">
+                        <label for="export-section">Section</label>
+                        <select id="export-section">
+                            <option value="all">All Sections</option>
+                            ${sections.map(section => `
+                                <option value="${section.id}">${section.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Export Data', class: 'button-primary', action: () => {
+                        // In a real app, this would generate and download the report
+                        // For this demo, we'll just show a success message
+                        showSuccess('Export request received. Data will be downloaded shortly.');
+                        return true;
+                    }}
+                ],
+                onRender: (modal) => {
+                    modal.querySelector('#export-time-range').addEventListener('change', (e) => {
+                        const customRangeGroup = modal.querySelector('#custom-range-group');
+                        if (e.target.value === 'custom') {
+                            customRangeGroup.style.display = 'block';
+                        } else {
+                            customRangeGroup.style.display = 'none';
+                        }
+                    });
                 }
-            });
-
-            modal.querySelector('#export-data-btn').addEventListener('click', () => {
-                // In a real app, this would generate and download the report
-                // For this demo, we'll just show a success message
-                showSuccess('Export request received. Data will be downloaded shortly.');
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
             });
         }
 
         // Show Change Password Modal
         function showChangePasswordModal() {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h2>Change Password</h2>
-                        <button class="close-button">&times;</button>
+            showModal({
+                title: 'Change Password',
+                body: `
+                    <div class="input-group">
+                        <label for="current-password">Current Password</label>
+                        <input type="password" id="current-password" required>
                     </div>
-                    <div class="modal-body">
-                        <div class="input-group">
-                            <label for="current-password">Current Password</label>
-                            <input type="password" id="current-password" required>
-                        </div>
-                        <div class="input-group">
-                            <label for="new-password">New Password</label>
-                            <input type="password" id="new-password" required minlength="6">
-                        </div>
-                        <div class="input-group">
-                            <label for="confirm-new-password">Confirm New Password</label>
-                            <input type="password" id="confirm-new-password" required minlength="6">
-                        </div>
+                    <div class="input-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" required minlength="6">
+                        <p class="input-hint">Minimum 6 characters</p>
                     </div>
-                    <div class="modal-footer">
-                        <button class="button button-secondary" id="cancel-password-btn">Cancel</button>
-                        <button class="button button-primary" id="save-password-btn">Change Password</button>
+                    <div class="input-group">
+                        <label for="confirm-new-password">Confirm New Password</label>
+                        <input type="password" id="confirm-new-password" required minlength="6">
                     </div>
-                </div>
-            `;
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Change Password', class: 'button-primary', action: async () => {
+                        const currentPassword = document.getElementById('current-password').value;
+                        const newPassword = document.getElementById('new-password').value;
+                        const confirmNewPassword = document.getElementById('confirm-new-password').value;
 
-            document.body.appendChild(modal);
+                        if (!currentPassword || !newPassword || !confirmNewPassword) {
+                            showError('Please fill all fields');
+                            return false;
+                        }
 
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
+                        if (newPassword !== confirmNewPassword) {
+                            showError('New passwords do not match');
+                            return false;
+                        }
 
-            // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                        if (newPassword.length < 6) {
+                            showError('Password must be at least 6 characters');
+                            return false;
+                        }
 
-            modal.querySelector('#cancel-password-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                        try {
+                            showLoading('Changing password...');
 
-            modal.querySelector('#save-password-btn').addEventListener('click', async () => {
-                const currentPassword = document.getElementById('current-password').value;
-                const newPassword = document.getElementById('new-password').value;
-                const confirmNewPassword = document.getElementById('confirm-new-password').value;
+                            // Reauthenticate user
+                            const credential = firebase.auth.EmailAuthProvider.credential(
+                                currentUser.email,
+                                currentPassword
+                            );
 
-                if (newPassword !== confirmNewPassword) {
-                    showError('New passwords do not match');
-                    return;
-                }
+                            await currentUser.reauthenticateWithCredential(credential);
 
-                try {
-                    showLoading('Changing password...');
+                            // Update password
+                            await currentUser.updatePassword(newPassword);
 
-                    // Reauthenticate user
-                    const credential = firebase.auth.EmailAuthProvider.credential(
-                        currentUser.email,
-                        currentPassword
-                    );
-
-                    await currentUser.reauthenticateWithCredential(credential);
-
-                    // Update password
-                    await currentUser.updatePassword(newPassword);
-
-                    hideLoading();
-                    showSuccess('Password changed successfully');
-                    modal.classList.remove('active');
-                    setTimeout(() => {
-                        modal.remove();
-                    }, 300);
-                } catch (error) {
-                    hideLoading();
-                    showError(error.message);
-                }
+                            hideLoading();
+                            showSuccess('Password changed successfully');
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            if (error.code === 'auth/wrong-password') {
+                                showError('Current password is incorrect');
+                            } else {
+                                showError(error.message || 'Failed to change password');
+                            }
+                            return false;
+                        }
+                    }}
+                ]
             });
         }
 
         // Show Delete Account Modal
         function showDeleteAccountModal() {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h2>Delete Account</h2>
-                        <button class="close-button">&times;</button>
+            showModal({
+                title: 'Delete Account',
+                body: `
+                    <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                    <p class="mb-4">All your data will be permanently removed from our systems.</p>
+                    
+                    <div class="input-group">
+                        <label for="delete-password">Enter your password to confirm</label>
+                        <input type="password" id="delete-password" required>
                     </div>
-                    <div class="modal-body">
-                        <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-                        <p>All your data will be permanently removed.</p>
-                        
-                        <div class="input-group mt-4">
-                            <label for="delete-password">Enter your password to confirm</label>
-                            <input type="password" id="delete-password" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="button button-secondary" id="cancel-delete-btn">Cancel</button>
-                        <button class="button button-danger" id="confirm-delete-btn">Delete Account</button>
-                    </div>
-                </div>
-            `;
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Delete Account', class: 'button-danger', action: async () => {
+                        const password = document.getElementById('delete-password').value;
 
-            document.body.appendChild(modal);
+                        if (!password) {
+                            showError('Please enter your password');
+                            return false;
+                        }
 
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
+                        try {
+                            showLoading('Deleting account...');
 
-            // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                            // Reauthenticate user
+                            const credential = firebase.auth.EmailAuthProvider.credential(
+                                currentUser.email,
+                                password
+                            );
 
-            modal.querySelector('#cancel-delete-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+                            await currentUser.reauthenticateWithCredential(credential);
 
-            modal.querySelector('#confirm-delete-btn').addEventListener('click', async () => {
-                const password = document.getElementById('delete-password').value;
+                            // Delete user from Firebase Auth
+                            await currentUser.delete();
 
-                try {
-                    showLoading('Deleting account...');
+                            // Delete user data from Firestore
+                            await db.collection('users').doc(currentUser.uid).delete();
 
-                    // Reauthenticate user
-                    const credential = firebase.auth.EmailAuthProvider.credential(
-                        currentUser.email,
-                        password
-                    );
-
-                    await currentUser.reauthenticateWithCredential(credential);
-
-                    // Delete user from Firebase Auth
-                    await currentUser.delete();
-
-                    // Delete user data from Firestore
-                    await db.collection('users').doc(currentUser.uid).delete();
-
-                    hideLoading();
-
-                    // User will be automatically signed out by the auth state listener
-                } catch (error) {
-                    hideLoading();
-                    showError(error.message);
-                }
+                            hideLoading();
+                            showSuccess('Account deleted successfully');
+                            
+                            // User will be automatically signed out by the auth state listener
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            if (error.code === 'auth/wrong-password') {
+                                showError('Incorrect password');
+                            } else {
+                                showError(error.message || 'Failed to delete account');
+                            }
+                            return false;
+                        }
+                    }}
+                ]
             });
         }
 
         // Show Forgot Password Modal
         function showForgotPasswordModal() {
+            showModal({
+                title: 'Reset Password',
+                body: `
+                    <p>Enter your email address and we'll send you a link to reset your password.</p>
+                    
+                    <div class="input-group mt-4">
+                        <label for="reset-email">Email</label>
+                        <input type="email" id="reset-email" required>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Send Reset Link', class: 'button-primary', action: async () => {
+                        const email = document.getElementById('reset-email').value.trim();
+
+                        if (!email) {
+                            showError('Please enter your email address');
+                            return false;
+                        }
+
+                        try {
+                            showLoading('Sending reset link...');
+                            await auth.sendPasswordResetEmail(email);
+                            hideLoading();
+                            showSuccess('Password reset link sent to your email');
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            if (error.code === 'auth/user-not-found') {
+                                showError('No account found with this email');
+                            } else {
+                                showError(error.message || 'Failed to send reset link');
+                            }
+                            return false;
+                        }
+                    }}
+                ]
+            });
+        }
+
+        // Generic Modal Function
+        function showModal(options) {
             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
             modal.innerHTML = `
                 <div class="modal">
                     <div class="modal-header">
-                        <h2>Reset Password</h2>
-                        <button class="close-button">&times;</button>
+                        <h2>${options.title}</h2>
+                        <button class="close-button" aria-label="Close">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <p>Enter your email address and we'll send you a link to reset your password.</p>
-                        
-                        <div class="input-group mt-4">
-                            <label for="reset-email">Email</label>
-                            <input type="email" id="reset-email" required>
-                        </div>
+                        ${options.body}
                     </div>
                     <div class="modal-footer">
-                        <button class="button button-secondary" id="cancel-reset-btn">Cancel</button>
-                        <button class="button button-primary" id="send-reset-btn">Send Reset Link</button>
+                        ${options.buttons.map(btn => `
+                            <button class="button ${btn.class}" id="${btn.text.toLowerCase().replace(' ', '-')}-btn">
+                                ${btn.text}
+                            </button>
+                        `).join('')}
                     </div>
                 </div>
             `;
@@ -2229,35 +2527,38 @@
             }, 10);
 
             // Set up event listeners
-            modal.querySelector('.close-button').addEventListener('click', () => {
+            const closeModal = () => {
                 modal.classList.remove('active');
                 setTimeout(() => {
                     modal.remove();
                 }, 300);
+            };
+
+            modal.querySelector('.close-button').addEventListener('click', closeModal);
+
+            options.buttons.forEach(btn => {
+                const button = modal.querySelector(`#${btn.text.toLowerCase().replace(' ', '-')}-btn`);
+                if (btn.action === 'close') {
+                    button.addEventListener('click', closeModal);
+                } else {
+                    button.addEventListener('click', async () => {
+                        const result = await btn.action();
+                        if (result) {
+                            closeModal();
+                        }
+                    });
+                }
             });
 
-            modal.querySelector('#cancel-reset-btn').addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
-            });
+            // Call onRender callback if provided
+            if (options.onRender) {
+                options.onRender(modal);
+            }
 
-            modal.querySelector('#send-reset-btn').addEventListener('click', async () => {
-                const email = document.getElementById('reset-email').value;
-
-                try {
-                    showLoading('Sending reset link...');
-                    await auth.sendPasswordResetEmail(email);
-                    hideLoading();
-                    showSuccess('Password reset link sent to your email');
-                    modal.classList.remove('active');
-                    setTimeout(() => {
-                        modal.remove();
-                    }, 300);
-                } catch (error) {
-                    hideLoading();
-                    showError(error.message);
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
                 }
             });
         }
@@ -2265,7 +2566,7 @@
         // Handle Student Check-In
         async function handleStudentCheckIn(section) {
             try {
-                showLoading('Verifying location...');
+                showLoading('Preparing check-in...');
 
                 // Check if there's an active session for this section
                 const sessionsSnapshot = await db.collection('sessions')
@@ -2280,20 +2581,30 @@
                 const session = sessionsSnapshot.docs[0].data();
                 const sessionId = sessionsSnapshot.docs[0].id;
 
-                // Get student's current location
-                const position = await getCurrentPosition();
-                const studentLocation = new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude);
+                // Check if student already checked in
+                if (session.attendees && session.attendees.includes(currentUser.uid)) {
+                    throw new Error('You have already checked in to this session');
+                }
 
-                // Calculate distance between teacher and student
-                const distance = calculateDistance(
-                    session.location.latitude,
-                    session.location.longitude,
-                    studentLocation.latitude,
-                    studentLocation.longitude
-                );
+                // Get student's current location if required
+                let studentLocation = null;
+                let distance = 0;
+                
+                if (session.requireLocation) {
+                    const position = await getCurrentPositionWithPermission();
+                    studentLocation = new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude);
 
-                if (distance > session.range) {
-                    throw new Error(`You are too far from the check-in location (${Math.round(distance)}m away, maximum is ${session.range}m)`);
+                    // Calculate distance between teacher and student
+                    distance = calculateDistance(
+                        session.location.latitude,
+                        session.location.longitude,
+                        studentLocation.latitude,
+                        studentLocation.longitude
+                    );
+
+                    if (distance > session.range) {
+                        throw new Error(`You are too far from the check-in location (${Math.round(distance)}m away, maximum is ${session.range}m)`);
+                    }
                 }
 
                 // Record attendance
@@ -2322,16 +2633,55 @@
             }
         }
 
+        // Get Current Position with Permission Handling
+        async function getCurrentPositionWithPermission() {
+            try {
+                if (geolocationPermission === 'denied') {
+                    throw new Error('Location access was denied. Please enable it in your browser settings to check in.');
+                }
+
+                if (geolocationPermission === 'prompt') {
+                    showLoading('Requesting location access...');
+                }
+
+                const position = await getCurrentPosition();
+                
+                if (geolocationPermission === 'prompt') {
+                    // If we got here, permission was granted
+                    geolocationPermission = 'granted';
+                    hideLoading();
+                }
+                
+                return position;
+            } catch (error) {
+                if (geolocationPermission === 'prompt') {
+                    hideLoading();
+                }
+                
+                if (error.code === error.PERMISSION_DENIED) {
+                    geolocationPermission = 'denied';
+                    throw new Error('Location access was denied. Please enable it in your browser settings to check in.');
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    throw new Error('Location information is unavailable. Please try again or check your connection.');
+                } else if (error.code === error.TIMEOUT) {
+                    throw new Error('The request to get your location timed out. Please try again.');
+                } else {
+                    throw new Error('An unknown error occurred while getting your location.');
+                }
+            }
+        }
+
         // Get Current Position
         function getCurrentPosition() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
                     reject(new Error('Geolocation is not supported by your browser'));
+                    return;
                 }
 
                 navigator.geolocation.getCurrentPosition(
                     (position) => resolve(position),
-                    (error) => reject(new Error(`Geolocation error: ${error.message}`)), {
+                    (error) => reject(error), {
                         enableHighAccuracy: true,
                         timeout: 10000,
                         maximumAge: 0
@@ -2410,8 +2760,13 @@
 
         // Show Error Message
         function showError(message) {
+            // Remove existing error messages
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+
             const error = document.createElement('div');
-            error.className = 'error-message';
+            error.className = 'error-message animated';
+            error.setAttribute('role', 'alert');
+            error.setAttribute('aria-live', 'assertive');
             error.style.position = 'fixed';
             error.style.bottom = '20px';
             error.style.left = '50%';
@@ -2425,10 +2780,11 @@
             error.style.display = 'flex';
             error.style.alignItems = 'center';
             error.style.gap = '8px';
-            error.style.animation = 'fadeIn 0.3s ease-out forwards';
+            error.style.maxWidth = '90%';
+            error.style.wordBreak = 'break-word';
 
             error.innerHTML = `
-                <i class="fas fa-exclamation-circle"></i>
+                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
                 <span>${message}</span>
             `;
 
@@ -2447,12 +2803,12 @@
                 style.id = 'error-animations';
                 style.innerHTML = `
                     @keyframes fadeIn {
-                        from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                        from { opacity: 0; transform: translateX(-50%) translateY(10px); }
                         to { opacity: 1; transform: translateX(-50%) translateY(0); }
                     }
                     @keyframes fadeOut {
                         from { opacity: 1; transform: translateX(-50%) translateY(0); }
-                        to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                        to { opacity: 0; transform: translateX(-50%) translateY(10px); }
                     }
                 `;
                 document.head.appendChild(style);
@@ -2461,8 +2817,13 @@
 
         // Show Success Message
         function showSuccess(message) {
+            // Remove existing success messages
+            document.querySelectorAll('.success-message').forEach(el => el.remove());
+
             const success = document.createElement('div');
-            success.className = 'success-message';
+            success.className = 'success-message animated';
+            success.setAttribute('role', 'status');
+            success.setAttribute('aria-live', 'polite');
             success.style.position = 'fixed';
             success.style.bottom = '20px';
             success.style.left = '50%';
@@ -2476,10 +2837,11 @@
             success.style.display = 'flex';
             success.style.alignItems = 'center';
             success.style.gap = '8px';
-            success.style.animation = 'fadeIn 0.3s ease-out forwards';
+            success.style.maxWidth = '90%';
+            success.style.wordBreak = 'break-word';
 
             success.innerHTML = `
-                <i class="fas fa-check-circle"></i>
+                <i class="fas fa-check-circle" aria-hidden="true"></i>
                 <span>${message}</span>
             `;
 
@@ -2495,6 +2857,13 @@
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', initApp);
+
+        // Handle window resize for responsive drawer
+        window.addEventListener('resize', () => {
+            if (document.querySelector('.drawer')) {
+                updateDrawerState();
+            }
+        });
     </script>
 </body>
 </html>
