@@ -1,2566 +1,2069 @@
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFBb1l7GHsPbCMT9_XI6Lqc88dxaAydTQ",
+            authDomain: "lite-50af2.firebaseapp.com",
+            databaseURL: "https://lite-50af2-default-rtdb.firebaseio.com",
+            projectId: "lite-50af2",
+            storageBucket: "lite-50af2.appspot.com",
+            messagingSenderId: "259126907909",
+            appId: "1:259126907909:web:9bde95a07abf54be42f86c",
+            measurementId: "G-YH5ET7LGS8"
+        };
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDFBb1l7GHsPbCMT9_XI6Lqc88dxaAydTQ",
-  authDomain: "lite-50af2.firebaseapp.com",
-  databaseURL: "https://lite-50af2-default-rtdb.firebaseio.com",
-  projectId: "lite-50af2",
-  storageBucket: "lite-50af2.firebasestorage.app",
-  messagingSenderId: "259126907909",
-  appId: "1:259126907909:web:9bde95a07abf54be42f86c",
-  measurementId: "G-YH5ET7LGS8"
-};
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const rtdb = firebase.database();
+        // App State
+        let currentUser = null;
+        let userRole = null;
+        let currentView = 'auth';
+        let sections = [];
+        let students = [];
+        let attendanceSessions = [];
+        let activeSession = null;
+        let activeSection = null;
+        let geolocationPermission = null;
 
-// App State
-let currentUser = null;
-let currentRole = null;
-let currentSections = [];
-let currentStudents = [];
-let activeSession = null;
-let userLocation = null;
-let watchId = null;
+        // DOM Elements
+        const appContainer = document.getElementById('app');
 
-// DOM Elements
-const app = document.getElementById('app');
-const modalsContainer = document.getElementById('modals-container');
+        // Initialize the app
+        function initApp() {
+            renderAuthScreen();
+            setupAuthStateListener();
+            checkGeolocationPermission();
+        }
 
-// Initialize the app
-function initApp() {
-    // Check authentication state
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            currentUser = user;
-            // Get user role from Firestore
-            getUserRole(user.uid).then(role => {
-                currentRole = role;
-                loadDashboard();
+        // Check geolocation permission state
+        function checkGeolocationPermission() {
+            if (navigator.permissions) {
+                navigator.permissions.query({ name: 'geolocation' })
+                    .then(permissionStatus => {
+                        geolocationPermission = permissionStatus.state;
+                        permissionStatus.onchange = () => {
+                            geolocationPermission = permissionStatus.state;
+                        };
+                    })
+                    .catch(() => {
+                        geolocationPermission = 'prompt';
+                    });
+            } else {
+                geolocationPermission = 'prompt';
+            }
+        }
+
+        // Auth State Listener
+        function setupAuthStateListener() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await fetchUserData();
+                    renderDashboard();
+                } else {
+                    currentUser = null;
+                    userRole = null;
+                    renderAuthScreen();
+                }
             });
-        } else {
-            currentUser = null;
-            currentRole = null;
-            renderAuthPage();
         }
-    });
-    
-    // Parse URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const sectionId = urlParams.get('sectionid');
-    
-    // If sectionId exists in URL and user is not logged in, store it for signup
-    if (sectionId && !currentUser) {
-        localStorage.setItem('inviteSectionId', sectionId);
-    }
-}
 
-// Get user role from Firestore
-async function getUserRole(userId) {
-    try {
-        const doc = await db.collection('users').doc(userId).get();
-        if (doc.exists) {
-            return doc.data().role; // 'teacher' or 'student'
+        // Fetch User Data
+        async function fetchUserData() {
+            try {
+                showLoading('Loading your data...');
+                
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists) {
+                    userRole = userDoc.data().role;
+
+                    if (userRole === 'teacher') {
+                        const sectionsSnapshot = await db.collection('sections')
+                            .where('teacherId', '==', currentUser.uid)
+                            .get();
+                        sections = sectionsSnapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+
+                        // Fetch students for each section
+                        const studentsPromises = sections.map(async section => {
+                            const studentsSnapshot = await db.collection('users')
+                                .where('sections', 'array-contains', section.id)
+                                .where('role', '==', 'student')
+                                .get();
+                            return studentsSnapshot.docs.map(doc => ({
+                                id: doc.id,
+                                ...doc.data()
+                            }));
+                        });
+
+                        const studentsArrays = await Promise.all(studentsPromises);
+                        students = studentsArrays.flat();
+                    } else if (userRole === 'student') {
+                        const userData = userDoc.data();
+                        sections = [];
+
+                        if (userData.sections && userData.sections.length > 0) {
+                            const sectionsSnapshot = await db.collection('sections')
+                                .where(firebase.firestore.FieldPath.documentId(), 'in', userData.sections)
+                                .get();
+                            sections = sectionsSnapshot.docs.map(doc => ({
+                                id: doc.id,
+                                ...doc.data()
+                            }));
+                        }
+                    }
+                }
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                showError('Failed to fetch user data. Please refresh the page to try again.');
+                console.error('Error fetching user data:', error);
+            }
         }
-        return null;
-    } catch (error) {
-        console.error("Error getting user role:", error);
-        showToast("Error loading user data");
-        return null;
-    }
-}
 
-// Render Authentication Page
-function renderAuthPage() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode') || 'signin';
-    
-    let authContent = '';
-    
-    if (mode === 'signup') {
-        const isTeacher = urlParams.get('role') === 'teacher';
-        
-        if (isTeacher) {
-            authContent = `
+        // Render Auth Screen
+        function renderAuthScreen() {
+            currentView = 'auth';
+            appContainer.innerHTML = `
                 <div class="auth-container">
                     <div class="auth-card card">
-                        <h1 class="auth-title">Teacher Sign Up</h1>
-                        <form id="teacherSignupForm">
-                            <div class="form-group">
-                                <label for="fullName" class="form-label">Full Name</label>
-                                <input type="text" id="fullName" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" id="email" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" id="password" class="form-control" required minlength="6">
-                            </div>
-                            <div class="form-group">
-                                <label for="confirmPassword" class="form-label">Confirm Password</label>
-                                <input type="password" id="confirmPassword" class="form-control" required minlength="6">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-lg w-100">Create Account</button>
-                        </form>
-                        <div class="auth-footer">
-                            <p>Already have an account? <a href="?mode=signin" class="auth-link">Sign in</a></p>
+                        <div class="auth-header">
+                            <div class="auth-logo">NC</div>
+                            <h1>NearCheck Lite</h1>
+                            <p>Smart geolocation-based attendance system for educators and students</p>
                         </div>
+                        <div id="auth-content"></div>
                     </div>
                 </div>
             `;
-        } else {
-            // Student sign up
-            const inviteSectionId = localStorage.getItem('inviteSectionId') || '';
-            
-            authContent = `
-                <div class="auth-container">
-                    <div class="auth-card card">
-                        <h1 class="auth-title">Student Sign Up</h1>
-                        <form id="studentSignupForm">
-                            <div class="form-group">
-                                <label for="fullName" class="form-label">Full Name</label>
-                                <input type="text" id="fullName" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="email" class="form-label">Email Address</label>
-                                <input type="email" id="email" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" id="password" class="form-control" required minlength="6">
-                            </div>
-                            <div class="form-group">
-                                <label for="confirmPassword" class="form-label">Confirm Password</label>
-                                <input type="password" id="confirmPassword" class="form-control" required minlength="6">
-                            </div>
-                            <div class="form-group">
-                                <label for="sectionId" class="form-label">Section ID</label>
-                                <input type="text" id="sectionId" class="form-control" value="${inviteSectionId}" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <input type="checkbox" id="ageConfirm" required> I confirm I'm 13 years or older
-                                </label>
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-lg w-100">Continue</button>
-                        </form>
-                        <div class="auth-footer">
-                            <p>Already have an account? <a href="?mode=signin" class="auth-link">Sign in</a></p>
-                        </div>
-                    </div>
+
+            renderRoleSelection();
+        }
+
+        // Render Role Selection
+        function renderRoleSelection() {
+            const authContent = document.getElementById('auth-content');
+            authContent.innerHTML = `
+                <div class="role-selector">
+                    <button class="role-button" id="teacher-role-btn" aria-label="I'm a Teacher">
+                        <span>I'm a Teacher</span>
+                        <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                    </button>
+                    <button class="role-button" id="student-role-btn" aria-label="I'm a Student">
+                        <span>I'm a Student</span>
+                        <i class="fas fa-user-graduate" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="auth-footer">
+                    Already have an account? <a href="#" id="sign-in-link">Sign in</a>
                 </div>
             `;
+
+            document.getElementById('teacher-role-btn').addEventListener('click', () => renderSignUpForm('teacher'));
+            document.getElementById('student-role-btn').addEventListener('click', () => renderSignUpForm('student'));
+            document.getElementById('sign-in-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                renderSignInForm();
+            });
         }
-    } else {
-        // Sign in form
-        authContent = `
-            <div class="auth-container">
-                <div class="auth-card card">
-                    <h1 class="auth-title">Sign In</h1>
-                    <form id="signinForm">
-                        <div class="form-group">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" id="email" class="form-control" required>
+
+        // Render Sign Up Form
+        function renderSignUpForm(role) {
+            const authContent = document.getElementById('auth-content');
+
+            if (role === 'teacher') {
+                authContent.innerHTML = `
+                    <form id="signup-form">
+                        <div class="input-group">
+                            <label for="fullname">Full Name</label>
+                            <input type="text" id="fullname" required aria-required="true">
                         </div>
-                        <div class="form-group">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" id="password" class="form-control" required>
+                        <div class="input-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required aria-required="true">
                         </div>
-                        <div class="form-group text-center">
-                            <a href="#" id="forgotPassword" class="auth-link">Forgot password?</a>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required minlength="6" aria-required="true">
+                            <p class="input-hint">Minimum 6 characters</p>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-lg w-100">Sign In</button>
+                        <div class="input-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" required minlength="6" aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <label for="birthdate">Birthdate (Must be 20+)</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="birthdate-day" placeholder="DD" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+                                <input type="text" id="birthdate-month" placeholder="MM" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+                                <input type="text" id="birthdate-year" placeholder="YYYY" maxlength="4" style="flex: 2;" pattern="[0-9]*" inputmode="numeric">
+                            </div>
+                        </div>
+                        <button type="submit" class="button button-primary w-100 mt-4">Create Account</button>
                     </form>
                     <div class="auth-footer">
-                        <p>New to Nearcheck? <a href="?mode=signup&role=student" class="auth-link">Sign up</a></p>
+                        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
                     </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    app.innerHTML = authContent;
-    
-    // Add event listeners
-    if (mode === 'signup') {
-        const isTeacher = urlParams.get('role') === 'teacher';
-        if (isTeacher) {
-            document.getElementById('teacherSignupForm').addEventListener('submit', handleTeacherSignup);
-        } else {
-            document.getElementById('studentSignupForm').addEventListener('submit', handleStudentSignup);
-        }
-    } else {
-        document.getElementById('signinForm').addEventListener('submit', handleSignIn);
-        document.getElementById('forgotPassword').addEventListener('click', handleForgotPassword);
-    }
-}
+                `;
 
-// Handle Teacher Signup
-async function handleTeacherSignup(e) {
-    e.preventDefault();
-    
-    const fullName = document.getElementById('fullName').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    // Basic validation
-    if (password !== confirmPassword) {
-        showToast("Passwords don't match");
-        return;
-    }
-    
-    try {
-        // Create user with Firebase Auth
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        
-        // Save additional user data to Firestore
-        await db.collection('users').doc(user.uid).set({
-            fullName,
-            email,
-            role: 'teacher',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Clear any invite section ID
-        localStorage.removeItem('inviteSectionId');
-        
-        // Show success message
-        showToast("Account created successfully!");
-        
-        // Redirect to dashboard after a delay
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 1500);
-    } catch (error) {
-        console.error("Signup error:", error);
-        showToast(error.message);
-    }
-}
-
-// Handle Student Signup
-async function handleStudentSignup(e) {
-    e.preventDefault();
-    
-    const fullName = document.getElementById('fullName').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    const sectionId = document.getElementById('sectionId').value.trim();
-    const ageConfirm = document.getElementById('ageConfirm').checked;
-    
-    // Basic validation
-    if (!ageConfirm) {
-        showToast("You must confirm you're 13 years or older");
-        return;
-    }
-    
-    if (password !== confirmPassword) {
-        showToast("Passwords don't match");
-        return;
-    }
-    
-    // Check if section exists
-    const sectionRef = db.collection('sections').doc(sectionId);
-    const sectionDoc = await sectionRef.get();
-    
-    if (!sectionDoc.exists) {
-        showToast("Invalid Section ID. Please check with your teacher.");
-        return;
-    }
-    
-    try {
-        // Create user with Firebase Auth
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        
-        // Save additional user data to Firestore
-        await db.collection('users').doc(user.uid).set({
-            fullName,
-            email,
-            role: 'student',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Add student to the section
-        await sectionRef.collection('students').doc(user.uid).set({
-            fullName,
-            email,
-            joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Clear invite section ID from localStorage
-        localStorage.removeItem('inviteSectionId');
-        
-        // Show success message
-        showToast("Account created successfully! You've been added to the section.");
-        
-        // Redirect to dashboard after a delay
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 1500);
-    } catch (error) {
-        console.error("Signup error:", error);
-        showToast(error.message);
-    }
-}
-
-// Handle Sign In
-async function handleSignIn(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    
-    try {
-        await auth.signInWithEmailAndPassword(email, password);
-        // onAuthStateChanged will handle the redirect
-    } catch (error) {
-        console.error("Sign in error:", error);
-        showToast(error.message);
-    }
-}
-
-// Handle Forgot Password
-function handleForgotPassword(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value.trim();
-    
-    if (!email) {
-        showToast("Please enter your email address");
-        return;
-    }
-    
-    auth.sendPasswordResetEmail(email)
-        .then(() => {
-            showToast("Password reset email sent. Please check your inbox.");
-        })
-        .catch(error => {
-            console.error("Password reset error:", error);
-            showToast(error.message);
-        });
-}
-
-// Load Dashboard based on user role
-function loadDashboard() {
-    if (!currentUser || !currentRole) {
-        renderAuthPage();
-        return;
-    }
-    
-    if (currentRole === 'teacher') {
-        loadTeacherDashboard();
-    } else {
-        loadStudentDashboard();
-    }
-    
-    // Load drawer
-    renderDrawer();
-}
-
-// Render Navigation Drawer
-function renderDrawer() {
-    const drawerContent = `
-        <div class="drawer">
-            <div class="drawer-header">
-                <h3>NearCheck Lite</h3>
-                <button id="closeDrawer" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="drawer-body">
-                <div class="drawer-item">
-                    <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
-                </div>
-                <div class="drawer-item">
-                    <i class="fas fa-users"></i>
-                    <span>${currentRole === 'teacher' ? 'My Students' : 'Enroll'}</span>
-                </div>
-                ${currentRole === 'teacher' ? `
-                <div class="drawer-item">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Attendance Reports</span>
-                </div>
-                ` : ''}
-                <div class="drawer-item">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </div>
-                <div class="drawer-item">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Sign Out</span>
-                </div>
-            </div>
-        </div>
-        <div class="overlay"></div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', drawerContent);
-    
-    // Add event listeners
-    document.getElementById('closeDrawer').addEventListener('click', toggleDrawer);
-    document.querySelector('.overlay').addEventListener('click', toggleDrawer);
-    
-    // Add click handlers for drawer items
-    const drawerItems = document.querySelectorAll('.drawer-item');
-    drawerItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const text = item.querySelector('span').textContent;
-            handleDrawerItemClick(text);
-        });
-    });
-}
-
-// Toggle Drawer
-function toggleDrawer() {
-    const drawer = document.querySelector('.drawer');
-    const overlay = document.querySelector('.overlay');
-    
-    drawer.classList.toggle('open');
-    overlay.classList.toggle('open');
-}
-
-// Handle Drawer Item Click
-function handleDrawerItemClick(itemText) {
-    toggleDrawer();
-    
-    switch(itemText) {
-        case 'Dashboard':
-            loadDashboard();
-            break;
-        case 'My Students':
-        case 'Enroll':
-            if (currentRole === 'teacher') {
-                renderManageStudents();
+                // Add input masking and auto-tab for birthdate
+                setupDateInputs();
             } else {
-                renderEnrollSection();
-            }
-            break;
-        case 'Attendance Reports':
-            renderAttendanceReports();
-            break;
-        case 'Settings':
-            renderSettings();
-            break;
-        case 'Sign Out':
-            auth.signOut();
-            break;
-        default:
-            break;
-    }
-}
+                // Student sign up
+                authContent.innerHTML = `
+                    <form id="signup-form">
+                        <div class="input-group">
+                            <label for="fullname">Full Name</label>
+                            <input type="text" id="fullname" required aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required minlength="6" aria-required="true">
+                            <p class="input-hint">Minimum 6 characters</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" required minlength="6" aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <label for="section-id">Section ID (optional)</label>
+                            <input type="text" id="section-id" placeholder="Provided by your teacher">
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="age-confirm" required aria-required="true"> 
+                                I confirm I'm 13 years or older
+                            </label>
+                        </div>
+                        <button type="submit" class="button button-primary w-100 mt-4">Continue</button>
+                    </form>
+                    <div class="auth-footer">
+                        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+                    </div>
+                `;
 
-// Load Teacher Dashboard
-async function loadTeacherDashboard() {
-    try {
-        // Get teacher's sections
-        const sectionsSnapshot = await db.collection('sections')
-            .where('teacherId', '==', currentUser.uid)
-            .get();
-        
-        currentSections = [];
-        sectionsSnapshot.forEach(doc => {
-            currentSections.push({
-                id: doc.id,
-                ...doc.data()
+                // Try to get section ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const sectionId = urlParams.get('sectionid');
+                if (sectionId) {
+                    document.getElementById('section-id').value = sectionId;
+                }
+            }
+
+            document.getElementById('signup-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleSignUp(role);
             });
-        });
-        
-        // Render dashboard
-        const greeting = getGreeting();
-        const dashboardContent = `
-            <div class="container">
-                <header class="header">
-                    <button id="openDrawer" class="btn btn-secondary"><i class="fas fa-bars"></i></button>
-                    <a href="#" class="header-logo">NearCheck</a>
-                    <div class="header-actions">
-                        <button id="createSectionBtn" class="btn btn-primary">+ Create Section</button>
-                    </div>
-                </header>
-                
-                <main>
-                    <div class="dashboard-header">
-                        <h1 class="greeting">${greeting}, ${currentUser.displayName || 'Teacher'}</h1>
-                    </div>
-                    
-                    <h2>My Sections</h2>
-                    ${currentSections.length > 0 ? `
-                        <div class="section-carousel">
-                            ${currentSections.map(section => `
-                                <div class="section-card" data-section-id="${section.id}">
-                                    <div class="section-actions">
-                                        <button class="btn btn-secondary btn-sm section-menu-btn"><i class="fas fa-ellipsis-v"></i></button>
-                                    </div>
-                                    <h3>${section.name}</h3>
-                                    <p>${section.subject}</p>
-                                    <p>ID: ${section.id}</p>
-                                    <p>Schedule: ${section.schedule}</p>
-                                    <p>Students: ${section.studentCount || 0}</p>
-                                    <button class="btn btn-primary mt-2 start-session-btn" data-section-id="${section.id}">
-                                        Start Attendance Session
-                                    </button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : `
-                        <div class="card">
-                            <p>You don't have any sections yet. Create your first section to get started.</p>
-                        </div>
-                    `}
-                </main>
-            </div>
-        `;
-        
-        app.innerHTML = dashboardContent;
-        
-        // Add event listeners
-        document.getElementById('openDrawer').addEventListener('click', toggleDrawer);
-        document.getElementById('createSectionBtn').addEventListener('click', renderCreateSectionForm);
-        
-        // Add click handlers for section cards
-        if (currentSections.length > 0) {
-            document.querySelectorAll('.start-session-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const sectionId = e.currentTarget.getAttribute('data-section-id');
-                    startAttendanceSession(sectionId);
+
+            document.getElementById('sign-in-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                renderSignInForm();
+            });
+        }
+
+        // Helper function for date input formatting
+        function setupDateInputs() {
+            const dayInput = document.getElementById('birthdate-day');
+            const monthInput = document.getElementById('birthdate-month');
+            const yearInput = document.getElementById('birthdate-year');
+
+            // Auto-tab between fields
+            dayInput.addEventListener('input', function() {
+                if (this.value.length === 2) {
+                    monthInput.focus();
+                }
+            });
+
+            monthInput.addEventListener('input', function() {
+                if (this.value.length === 2) {
+                    yearInput.focus();
+                }
+            });
+
+            // Only allow numbers
+            [dayInput, monthInput, yearInput].forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key < '0' || e.key > '9') {
+                        e.preventDefault();
+                    }
                 });
-            });
-            
-            document.querySelectorAll('.section-menu-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const sectionCard = e.currentTarget.closest('.section-card');
-                    const sectionId = sectionCard.getAttribute('data-section-id');
-                    showSectionMenu(sectionId, e.currentTarget);
+
+                // Prevent paste of non-numeric values
+                input.addEventListener('paste', function(e) {
+                    const pasteData = e.clipboardData.getData('text');
+                    if (!/^\d+$/.test(pasteData)) {
+                        e.preventDefault();
+                    }
                 });
             });
         }
-    } catch (error) {
-        console.error("Error loading teacher dashboard:", error);
-        showToast("Error loading dashboard");
-    }
-}
 
-// Get time-based greeting
-function getGreeting() {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-}
+        // Render Sign In Form
+        function renderSignInForm() {
+            const authContent = document.getElementById('auth-content');
+            authContent.innerHTML = `
+                <form id="signin-form">
+                    <div class="input-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required aria-required="true">
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required aria-required="true">
+                    </div>
+                    <div class="input-group">
+                        <a href="#" id="forgot-password" style="font-size: 14px; text-align: right; display: block;">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="button button-primary w-100">Sign In</button>
+                </form>
+                <div class="auth-footer">
+                    New to NearCheck? <a href="#" id="sign-up-link">Sign up</a>
+                </div>
+            `;
 
-// Render Create Section Form
-function renderCreateSectionForm() {
-    const modalContent = `
-        <div class="modal-header">
-            <h3 class="modal-title">Create New Section</h3>
-            <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <form id="createSectionForm">
-                <div class="form-group">
-                    <label for="sectionName" class="form-label">Section Name</label>
-                    <input type="text" id="sectionName" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="subject" class="form-label">Subject</label>
-                    <input type="text" id="subject" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="schedule" class="form-label">Schedule</label>
-                    <input type="text" id="schedule" class="form-control" placeholder="e.g. Mon/Wed/Fri 9:00-10:00" required>
-                </div>
-                <div class="form-group">
-                    <label for="checkinRange" class="form-label">Check-in Range (meters)</label>
-                    <input type="number" id="checkinRange" class="form-control" min="5" max="150" value="50" required>
-                </div>
-                <div class="form-group">
-                    <button type="button" id="getLocationBtn" class="btn btn-secondary">
-                        <i class="fas fa-location-arrow"></i> Set Teacher Location
-                    </button>
-                    <div id="locationStatus" class="mt-2"></div>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary close-modal">Cancel</button>
-            <button id="createSectionSubmit" class="btn btn-primary">Create</button>
-        </div>
-    `;
-    
-    showModal('Create Section', modalContent);
-    
-    // Add event listeners
-    document.getElementById('getLocationBtn').addEventListener('click', getTeacherLocation);
-    document.getElementById('createSectionSubmit').addEventListener('click', handleCreateSection);
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-}
+            document.getElementById('signin-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleSignIn();
+            });
 
-// Get Teacher Location for Section Creation
-function getTeacherLocation() {
-    const locationStatus = document.getElementById('locationStatus');
-    locationStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting location...';
-    
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    accuracy: position.coords.accuracy
+            document.getElementById('sign-up-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                renderRoleSelection();
+            });
+
+            document.getElementById('forgot-password').addEventListener('click', (e) => {
+                e.preventDefault();
+                showForgotPasswordModal();
+            });
+        }
+
+        // Handle Sign Up
+        async function handleSignUp(role) {
+            const fullName = document.getElementById('fullname').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!fullName || !email || !password || !confirmPassword) {
+                showError('Please fill all required fields');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            // Additional validation for teachers (age verification)
+            if (role === 'teacher') {
+                const day = document.getElementById('birthdate-day').value;
+                const month = document.getElementById('birthdate-month').value;
+                const year = document.getElementById('birthdate-year').value;
+
+                if (!day || !month || !year) {
+                    showError('Please enter your complete birthdate');
+                    return;
+                }
+
+                // Validate date
+                const birthDate = new Date(`${year}-${month}-${day}`);
+                if (isNaN(birthDate.getTime())) {
+                    showError('Please enter a valid date');
+                    return;
+                }
+
+                // Calculate age
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                if (age < 20) {
+                    showError('You must be at least 20 years old to register as a teacher');
+                    return;
+                }
+            }
+
+            // Additional validation for students (age confirmation)
+            if (role === 'student' && !document.getElementById('age-confirm').checked) {
+                showError('You must confirm you are at least 13 years old');
+                return;
+            }
+
+            try {
+                showLoading('Creating account...');
+
+                // Create user in Firebase Auth
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Save additional user data in Firestore
+                const userData = {
+                    fullName,
+                    email,
+                    role,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
-                
-                locationStatus.innerHTML = `
-                    <i class="fas fa-check-circle" style="color: var(--success-color);"></i> 
-                    Location set (Accuracy: ${Math.round(userLocation.accuracy)} meters)
-                `;
-            },
-            (error) => {
-                console.error("Geolocation error:", error);
-                locationStatus.innerHTML = `
-                    <i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i> 
-                    ${error.message}
-                `;
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    } else {
-        locationStatus.innerHTML = `
-            <i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i> 
-            Geolocation is not supported by your browser
-        `;
-    }
-}
 
-// Handle Create Section
-async function handleCreateSection() {
-    const sectionName = document.getElementById('sectionName').value.trim();
-    const subject = document.getElementById('subject').value.trim();
-    const schedule = document.getElementById('schedule').value.trim();
-    const checkinRange = parseInt(document.getElementById('checkinRange').value);
-    
-    if (!sectionName || !subject || !schedule || isNaN(checkinRange)) {
-        showToast("Please fill all fields correctly");
-        return;
-    }
-    
-    if (!userLocation) {
-        showToast("Please set teacher location first");
-        return;
-    }
-    
-    try {
-        // Create section in Firestore
-        const sectionRef = await db.collection('sections').add({
-            name: sectionName,
-            subject,
-            schedule,
-            checkinRange,
-            teacherId: currentUser.uid,
-            teacherName: currentUser.displayName || 'Teacher',
-            teacherLocation: new firebase.firestore.GeoPoint(userLocation.lat, userLocation.lng),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            studentCount: 0
-        });
-        
-        showToast(`Section "${sectionName}" created successfully!`);
-        closeModal();
-        loadTeacherDashboard();
-    } catch (error) {
-        console.error("Error creating section:", error);
-        showToast("Error creating section");
-    }
-}
+                if (role === 'student') {
+                    const sectionId = document.getElementById('section-id').value.trim();
+                    if (sectionId) {
+                        userData.sections = [sectionId];
+                    } else {
+                        userData.sections = [];
+                    }
+                }
 
-// Show Section Menu (for ellipsis button)
-function showSectionMenu(sectionId, buttonElement) {
-    const section = currentSections.find(s => s.id === sectionId);
-    if (!section) return;
-    
-    const rect = buttonElement.getBoundingClientRect();
-    const menuContent = `
-        <div class="dropdown-menu" style="position: absolute; top: ${rect.bottom + 5}px; left: ${rect.left - 150}px; width: 200px;">
-            <div class="card">
-                <div class="dropdown-item" data-action="invite"><i class="fas fa-user-plus"></i> Invite Students</div>
-                <div class="dropdown-item" data-action="manage"><i class="fas fa-users-cog"></i> Manage Students</div>
-                <div class="dropdown-item" data-action="delete"><i class="fas fa-trash"></i> Delete Section</div>
-            </div>
-        </div>
-    `;
-    
-    // Remove any existing dropdown
-    const existingDropdown = document.querySelector('.dropdown-menu');
-    if (existingDropdown) existingDropdown.remove();
-    
-    // Add new dropdown
-    document.body.insertAdjacentHTML('beforeend', menuContent);
-    
-    // Add click handlers
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            const action = e.currentTarget.getAttribute('data-action');
-            handleSectionAction(sectionId, action);
-            document.querySelector('.dropdown-menu').remove();
-        });
-    });
-    
-    // Close menu when clicking outside
-    setTimeout(() => {
-        document.addEventListener('click', function clickOutside(e) {
-            if (!e.target.closest('.dropdown-menu') && e.target !== buttonElement) {
-                document.querySelector('.dropdown-menu').remove();
-                document.removeEventListener('click', clickOutside);
-            }
-        });
-    }, 10);
-}
+                await db.collection('users').doc(user.uid).set(userData);
 
-// Handle Section Action
-function handleSectionAction(sectionId, action) {
-    const section = currentSections.find(s => s.id === sectionId);
-    if (!section) return;
-    
-    switch(action) {
-        case 'invite':
-            showInviteStudentsModal(section);
-            break;
-        case 'manage':
-            renderManageStudents(sectionId);
-            break;
-        case 'delete':
-            showDeleteSectionModal(section);
-            break;
-        default:
-            break;
-    }
-}
+                // Update user profile with display name
+                await user.updateProfile({
+                    displayName: fullName
+                });
 
-// Show Invite Students Modal
-function showInviteStudentsModal(section) {
-    const inviteLink = `${window.location.origin}${window.location.pathname}?sectionid=${section.id}`;
-    
-    const modalContent = `
-        <div class="modal-header">
-            <h3 class="modal-title">Invite Students to ${section.name}</h3>
-            <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label class="form-label">Invitation Link</label>
-                <div class="flex gap-2">
-                    <input type="text" id="inviteLink" class="form-control" value="${inviteLink}" readonly>
-                    <button id="copyLinkBtn" class="btn btn-primary"><i class="fas fa-copy"></i></button>
-                </div>
-            </div>
-            <div class="form-group mt-4">
-                <label class="form-label">Or share via QR Code</label>
-                <div class="qr-code-container">
-                    <div class="qr-code" id="qrCode"></div>
-                    <button id="downloadQrBtn" class="btn btn-primary"><i class="fas fa-download"></i> Download QR</button>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary close-modal">Close</button>
-        </div>
-    `;
-    
-    showModal('Invite Students', modalContent);
-    
-    // Add event listeners
-    document.getElementById('copyLinkBtn').addEventListener('click', () => {
-        const linkInput = document.getElementById('inviteLink');
-        linkInput.select();
-        document.execCommand('copy');
-        showToast("Link copied to clipboard!");
-    });
-    
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-    
-    // Generate QR Code (would need a QR code library in production)
-    // This is a placeholder - in a real app you'd use a library like QRious
-    document.getElementById('qrCode').innerHTML = '<div class="text-center"><i class="fas fa-qrcode fa-5x"></i><p class="mt-2">QR Code would appear here</p></div>';
-}
+                hideLoading();
 
-// Show Delete Section Modal
-function showDeleteSectionModal(section) {
-    const modalContent = `
-        <div class="modal-header">
-            <h3 class="modal-title">Delete Section</h3>
-            <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to delete "${section.name}"? This action cannot be undone.</p>
-            <div class="form-group mt-3">
-                <label for="confirmPassword" class="form-label">Confirm your password to delete</label>
-                <input type="password" id="confirmPassword" class="form-control" required>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary close-modal">Cancel</button>
-            <button id="confirmDeleteBtn" class="btn btn-danger">Delete Section</button>
-        </div>
-    `;
-    
-    showModal('Delete Section', modalContent);
-    
-    // Add event listeners
-    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-        const password = document.getElementById('confirmPassword').value;
-        deleteSection(section.id, password);
-    });
-    
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-}
-
-// Delete Section
-async function deleteSection(sectionId, password) {
-    if (!password) {
-        showToast("Please enter your password");
-        return;
-    }
-    
-    try {
-        // Reauthenticate user
-        const credential = firebase.auth.EmailAuthProvider.credential(
-            currentUser.email,
-            password
-        );
-        
-        await currentUser.reauthenticateWithCredential(credential);
-        
-        // Delete section
-        await db.collection('sections').doc(sectionId).delete();
-        
-        // Delete all students in this section
-        const studentsSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('students')
-            .get();
-        
-        const batch = db.batch();
-        studentsSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        await batch.commit();
-        
-        showToast("Section deleted successfully");
-        closeModal();
-        loadTeacherDashboard();
-    } catch (error) {
-        console.error("Error deleting section:", error);
-        showToast(error.message);
-    }
-}
-
-// Start Attendance Session
-async function startAttendanceSession(sectionId) {
-    const section = currentSections.find(s => s.id === sectionId);
-    if (!section) return;
-    
-    // Get teacher's current location
-    try {
-        const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
-        });
-        
-        const teacherLocation = new firebase.firestore.GeoPoint(
-            position.coords.latitude,
-            position.coords.longitude
-        );
-        
-        // Update section with current location
-        await db.collection('sections').doc(sectionId).update({
-            teacherLocation,
-            lastSessionStart: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Create active session in Realtime DB
-        activeSession = {
-            sectionId,
-            startTime: firebase.database.ServerValue.TIMESTAMP,
-            teacherLocation: {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            },
-            checkinRange: section.checkinRange,
-            status: 'active'
-        };
-        
-        await rtdb.ref(`sessions/${sectionId}`).set(activeSession);
-        
-        // Start watching for student check-ins
-        watchForCheckins(sectionId);
-        
-        // Show session controls
-        showSessionControls(section);
-        
-        showToast("Attendance session started!");
-    } catch (error) {
-        console.error("Error starting session:", error);
-        showToast(error.message);
-    }
-}
-
-// Show Session Controls
-function showSessionControls(section) {
-    const modalContent = `
-        <div class="modal-header">
-            <h3 class="modal-title">Attendance Session - ${section.name}</h3>
-            <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="flex align-items-center gap-3 mb-3">
-                <div class="status-badge status-present">Live</div>
-                <div>Check-in range: ${section.checkinRange}m radius</div>
-            </div>
-            
-            <div id="checkinsContainer">
-                <p>Waiting for student check-ins...</p>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button id="endSessionBtn" class="btn btn-danger">End Session</button>
-        </div>
-    `;
-    
-    showModal('Attendance Session', modalContent, { large: true });
-    
-    // Add event listeners
-    document.getElementById('endSessionBtn').addEventListener('click', () => {
-        endAttendanceSession(section.id);
-    });
-    
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            closeModal();
-            endAttendanceSession(section.id);
-        });
-    });
-}
-
-// Watch for Student Check-ins
-function watchForCheckins(sectionId) {
-    // Listen for student check-ins in Realtime DB
-    rtdb.ref(`checkins/${sectionId}`).on('value', (snapshot) => {
-        const checkins = snapshot.val() || {};
-        updateCheckinsList(checkins);
-    });
-}
-
-// Update Check-ins List
-function updateCheckinsList(checkins) {
-    const container = document.getElementById('checkinsContainer');
-    if (!container) return;
-    
-    const checkinList = Object.entries(checkins).map(([studentId, checkin]) => {
-        return `
-            <div class="flex align-items-center justify-content-between mb-2 p-2" style="background: var(--light-gray); border-radius: var(--border-radius-sm);">
-                <div>
-                    <strong>${checkin.studentName}</strong>
-                    <div class="text-sm">${new Date(checkin.timestamp).toLocaleTimeString()}</div>
-                </div>
-                <div class="flex gap-2">
-                    <button class="btn btn-success btn-sm approve-btn" data-student-id="${studentId}">Approve</button>
-                    <button class="btn btn-danger btn-sm deny-btn" data-student-id="${studentId}">Deny</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    container.innerHTML = checkinList.length > 0 ? checkinList : '<p>No check-ins yet</p>';
-    
-    // Add event listeners for approve/deny buttons
-    document.querySelectorAll('.approve-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const studentId = e.currentTarget.getAttribute('data-student-id');
-            handleCheckinApproval(studentId, true);
-        });
-    });
-    
-    document.querySelectorAll('.deny-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const studentId = e.currentTarget.getAttribute('data-student-id');
-            handleCheckinApproval(studentId, false);
-        });
-    });
-}
-
-// Handle Check-in Approval
-async function handleCheckinApproval(studentId, approved) {
-    if (!activeSession) return;
-    
-    try {
-        // Record attendance in Firestore
-        await db.collection('sections')
-            .doc(activeSession.sectionId)
-            .collection('attendance')
-            .add({
-                studentId,
-                date: firebase.firestore.FieldValue.serverTimestamp(),
-                status: approved ? 'present' : 'absent',
-                approvedBy: currentUser.uid,
-                location: activeSession.teacherLocation,
-                checkinRange: activeSession.checkinRange
-            });
-        
-        // Remove check-in from Realtime DB
-        await rtdb.ref(`checkins/${activeSession.sectionId}/${studentId}`).remove();
-        
-        showToast(`Check-in ${approved ? 'approved' : 'denied'}`);
-    } catch (error) {
-        console.error("Error handling check-in:", error);
-        showToast("Error processing check-in");
-    }
-}
-
-// End Attendance Session
-async function endAttendanceSession(sectionId) {
-    try {
-        // Update session status in Realtime DB
-        await rtdb.ref(`sessions/${sectionId}`).update({
-            status: 'ended',
-            endTime: firebase.database.ServerValue.TIMESTAMP
-        });
-        
-        // Stop listening for check-ins
-        if (rtdb.ref(`checkins/${sectionId}`).off) {
-            rtdb.ref(`checkins/${sectionId}`).off();
-        }
-        
-        activeSession = null;
-        closeModal();
-        showToast("Attendance session ended");
-    } catch (error) {
-        console.error("Error ending session:", error);
-        showToast("Error ending session");
-    }
-}
-
-// Render Manage Students
-async function renderManageStudents(sectionId = null) {
-    if (!sectionId && currentSections.length > 0) {
-        sectionId = currentSections[0].id;
-    }
-    
-    if (!sectionId) {
-        app.innerHTML = '<div class="container"><p>No sections available</p></div>';
-        return;
-    }
-    
-    try {
-        // Get students in this section
-        const studentsSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('students')
-            .get();
-        
-        currentStudents = [];
-        studentsSnapshot.forEach(doc => {
-            currentStudents.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
-        // Get attendance data for these students
-        const attendanceData = await getAttendanceData(sectionId);
-        
-        // Render manage students page
-        const section = currentSections.find(s => s.id === sectionId);
-        const content = `
-            <div class="container">
-                <header class="header">
-                    <button id="openDrawer" class="btn btn-secondary"><i class="fas fa-bars"></i></button>
-                    <a href="#" class="header-logo">NearCheck</a>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary" id="backToDashboard"><i class="fas fa-arrow-left"></i> Back</button>
-                    </div>
-                </header>
-                
-                <main>
-                    <div class="dashboard-header">
-                        <h1>Manage Students - ${section?.name || 'Section'}</h1>
-                        ${currentSections.length > 1 ? `
-                            <select id="sectionSelector" class="form-control">
-                                ${currentSections.map(s => `
-                                    <option value="${s.id}" ${s.id === sectionId ? 'selected' : ''}>${s.name}</option>
-                                `).join('')}
-                            </select>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Students (${currentStudents.length})</h3>
-                            <input type="text" id="studentSearch" class="form-control" placeholder="Search students...">
-                        </div>
-                        
-                        <div id="studentsList">
-                            ${currentStudents.map(student => {
-                                const attendance = attendanceData[student.id] || {};
-                                return `
-                                    <div class="flex align-items-center justify-content-between p-3 border-bottom" data-student-id="${student.id}">
-                                        <div>
-                                            <strong>${student.fullName}</strong>
-                                            <div class="text-sm">${student.email}</div>
-                                            <div class="text-sm mt-1">
-                                                <span class="status-badge status-present">${attendance.present || 0} present</span>
-                                                <span class="status-badge status-absent">${attendance.absent || 0} absent</span>
-                                                <span class="status-badge status-excused">${attendance.excused || 0} excused</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex gap-2">
-                                            <button class="btn btn-secondary btn-sm student-action" data-action="view"><i class="fas fa-eye"></i></button>
-                                            <button class="btn btn-danger btn-sm student-action" data-action="remove"><i class="fas fa-user-minus"></i></button>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                </main>
-            </div>
-        `;
-        
-        app.innerHTML = content;
-        
-        // Add event listeners
-        document.getElementById('openDrawer').addEventListener('click', toggleDrawer);
-        document.getElementById('backToDashboard').addEventListener('click', loadTeacherDashboard);
-        
-        if (currentSections.length > 1) {
-            document.getElementById('sectionSelector').addEventListener('change', (e) => {
-                renderManageStudents(e.target.value);
-            });
-        }
-        
-        document.getElementById('studentSearch').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const students = document.querySelectorAll('#studentsList > div');
-            
-            students.forEach(student => {
-                const name = student.querySelector('strong').textContent.toLowerCase();
-                if (name.includes(searchTerm)) {
-                    student.style.display = 'flex';
+                // Redirect to dashboard
+                currentUser = user;
+                userRole = role;
+                await fetchUserData();
+                renderDashboard();
+            } catch (error) {
+                hideLoading();
+                if (error.code === 'auth/email-already-in-use') {
+                    showError('This email is already registered. Please sign in instead.');
+                } else if (error.code === 'auth/weak-password') {
+                    showError('Password should be at least 6 characters');
+                } else if (error.code === 'auth/invalid-email') {
+                    showError('Please enter a valid email address');
                 } else {
-                    student.style.display = 'none';
+                    showError(error.message || 'Account creation failed. Please try again.');
                 }
-            });
-        });
-        
-        document.querySelectorAll('.student-action').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const studentId = e.currentTarget.closest('[data-student-id]').getAttribute('data-student-id');
-                const action = e.currentTarget.getAttribute('data-action');
+            }
+        }
+
+        // Handle Sign In
+        async function handleSignIn() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('Please enter both email and password');
+                return;
+            }
+
+            try {
+                showLoading('Signing in...');
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 
-                if (action === 'view') {
-                    viewStudentDetails(studentId, sectionId);
-                } else if (action === 'remove') {
-                    removeStudentFromSection(studentId, sectionId);
+                // Update current user with display name if available
+                currentUser = userCredential.user;
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                if (error.code === 'auth/user-not-found') {
+                    showError('No account found with this email. Please sign up.');
+                } else if (error.code === 'auth/wrong-password') {
+                    showError('Incorrect password. Please try again.');
+                } else if (error.code === 'auth/too-many-requests') {
+                    showError('Too many failed attempts. Please try again later or reset your password.');
+                } else {
+                    showError(error.message || 'Sign in failed. Please try again.');
                 }
-            });
-        });
-    } catch (error) {
-        console.error("Error loading students:", error);
-        showToast("Error loading students");
-    }
-}
-
-// Get Attendance Data for Students
-async function getAttendanceData(sectionId) {
-    const attendanceData = {};
-    
-    try {
-        const attendanceSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('attendance')
-            .get();
-        
-        attendanceSnapshot.forEach(doc => {
-            const data = doc.data();
-            if (!attendanceData[data.studentId]) {
-                attendanceData[data.studentId] = {
-                    present: 0,
-                    absent: 0,
-                    excused: 0
-                };
             }
-            
-            if (data.status === 'present') attendanceData[data.studentId].present++;
-            if (data.status === 'absent') attendanceData[data.studentId].absent++;
-            if (data.status === 'excused') attendanceData[data.studentId].excused++;
-        });
-    } catch (error) {
-        console.error("Error getting attendance data:", error);
-    }
-    
-    return attendanceData;
-}
-
-// View Student Details
-async function viewStudentDetails(studentId, sectionId) {
-    const student = currentStudents.find(s => s.id === studentId);
-    if (!student) return;
-    
-    try {
-        // Get attendance records for this student
-        const attendanceSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('attendance')
-            .where('studentId', '==', studentId)
-            .orderBy('date', 'desc')
-            .limit(30)
-            .get();
-        
-        const attendanceRecords = [];
-        attendanceSnapshot.forEach(doc => {
-            attendanceRecords.push(doc.data());
-        });
-        
-        // Calculate attendance stats
-        const totalRecords = attendanceRecords.length;
-        const presentCount = attendanceRecords.filter(r => r.status === 'present').length;
-        const absentCount = attendanceRecords.filter(r => r.status === 'absent').length;
-        const excusedCount = attendanceRecords.filter(r => r.status === 'excused').length;
-        const attendanceRate = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 0;
-        
-        // Render student details modal
-        const modalContent = `
-            <div class="modal-header">
-                <h3 class="modal-title">${student.fullName}'s Attendance</h3>
-                <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="card mb-3">
-                    <div class="flex align-items-center justify-content-between">
-                        <div>
-                            <h4>${student.fullName}</h4>
-                            <p>${student.email}</p>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-lg" style="font-size: 2rem; font-weight: 600; color: var(--primary-color);">${attendanceRate}%</div>
-                            <div>Attendance Rate</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <h4>Recent Attendance</h4>
-                <div id="attendanceRecords">
-                    ${attendanceRecords.map(record => {
-                        const date = record.date.toDate ? record.date.toDate() : new Date();
-                        return `
-                            <div class="flex align-items-center justify-content-between p-2 border-bottom">
-                                <div>
-                                    <div>${date.toLocaleDateString()}</div>
-                                    <div class="text-sm">${date.toLocaleTimeString()}</div>
-                                </div>
-                                <div class="status-badge ${getStatusClass(record.status)}">${record.status}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                    
-                    ${attendanceRecords.length === 0 ? '<p>No attendance records yet</p>' : ''}
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary close-modal">Close</button>
-            </div>
-        `;
-        
-        showModal('Student Attendance', modalContent, { large: true });
-        
-        // Add event listeners
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', closeModal);
-        });
-    } catch (error) {
-        console.error("Error loading student details:", error);
-        showToast("Error loading student details");
-    }
-}
-
-// Get Status Class for Badge
-function getStatusClass(status) {
-    switch(status) {
-        case 'present': return 'status-present';
-        case 'absent': return 'status-absent';
-        case 'excused': return 'status-excused';
-        default: return '';
-    }
-}
-
-// Remove Student from Section
-async function removeStudentFromSection(studentId, sectionId) {
-    const student = currentStudents.find(s => s.id === studentId);
-    if (!student) return;
-    
-    const confirm = window.confirm(`Are you sure you want to remove ${student.fullName} from this section?`);
-    if (!confirm) return;
-    
-    try {
-        // Remove student from section
-        await db.collection('sections')
-            .doc(sectionId)
-            .collection('students')
-            .doc(studentId)
-            .delete();
-        
-        // Decrement student count
-        await db.collection('sections')
-            .doc(sectionId)
-            .update({
-                studentCount: firebase.firestore.FieldValue.increment(-1)
-            });
-        
-        showToast("Student removed from section");
-        renderManageStudents(sectionId);
-    } catch (error) {
-        console.error("Error removing student:", error);
-        showToast("Error removing student");
-    }
-}
-
-// Render Attendance Reports
-async function renderAttendanceReports() {
-    try {
-        // Get all sections for this teacher
-        const sectionsSnapshot = await db.collection('sections')
-            .where('teacherId', '==', currentUser.uid)
-            .get();
-        
-        const sections = [];
-        sectionsSnapshot.forEach(doc => {
-            sections.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
-        if (sections.length === 0) {
-            app.innerHTML = '<div class="container"><p>No sections available</p></div>';
-            return;
         }
-        
-        // Get attendance data for the first section by default
-        const sectionId = sections[0].id;
-        const attendanceData = await getSectionAttendanceData(sectionId);
-        
-        // Render reports page
-        const content = `
-            <div class="container">
-                <header class="header">
-                    <button id="openDrawer" class="btn btn-secondary"><i class="fas fa-bars"></i></button>
-                    <a href="#" class="header-logo">NearCheck</a>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary" id="backToDashboard"><i class="fas fa-arrow-left"></i> Back</button>
-                    </div>
-                </header>
-                
-                <main>
-                    <div class="dashboard-header">
-                        <h1>Attendance Reports</h1>
-                        ${sections.length > 1 ? `
-                            <select id="sectionSelector" class="form-control">
-                                ${sections.map(s => `
-                                    <option value="${s.id}" ${s.id === sectionId ? 'selected' : ''}>${s.name}</option>
-                                `).join('')}
-                            </select>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="card mb-3">
-                        <div class="flex align-items-center justify-content-between">
-                            <div>
-                                <h3>${sections.find(s => s.id === sectionId)?.name || 'Section'}</h3>
-                                <p>${attendanceData.totalStudents} students</p>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg" style="font-size: 2rem; font-weight: 600; color: var(--primary-color);">${attendanceData.attendanceRate}%</div>
-                                <div>Overall Attendance</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Monthly Summary</h3>
-                            <select id="monthSelector" class="form-control">
-                                ${Array.from({ length: 12 }, (_, i) => {
-                                    const date = new Date();
-                                    date.setMonth(i);
-                                    return `<option value="${i}" ${i === new Date().getMonth() ? 'selected' : ''}>${date.toLocaleString('default', { month: 'long' })}</option>`;
-                                }).join('')}
-                            </select>
-                        </div>
-                        
-                        <div id="monthlyReport">
-                            <!-- Monthly report will be loaded here -->
-                        </div>
-                    </div>
-                </main>
-            </div>
-        `;
-        
-        app.innerHTML = content;
-        
-        // Add event listeners
-        document.getElementById('openDrawer').addEventListener('click', toggleDrawer);
-        document.getElementById('backToDashboard').addEventListener('click', loadTeacherDashboard);
-        
-        if (sections.length > 1) {
-            document.getElementById('sectionSelector').addEventListener('change', async (e) => {
-                const sectionId = e.target.value;
-                const attendanceData = await getSectionAttendanceData(sectionId);
-                updateReportHeader(attendanceData);
-                loadMonthlyReport(sectionId, new Date().getMonth());
-            });
-        }
-        
-        document.getElementById('monthSelector').addEventListener('change', (e) => {
-            const month = parseInt(e.target.value);
-            loadMonthlyReport(sectionId, month);
-        });
-        
-        // Load initial monthly report
-        loadMonthlyReport(sectionId, new Date().getMonth());
-    } catch (error) {
-        console.error("Error loading reports:", error);
-        showToast("Error loading reports");
-    }
-}
 
-// Get Section Attendance Data
-async function getSectionAttendanceData(sectionId) {
-    const result = {
-        totalStudents: 0,
-        attendanceRate: 0,
-        presentCount: 0,
-        absentCount: 0,
-        excusedCount: 0
-    };
-    
-    try {
-        // Get student count
-        const sectionDoc = await db.collection('sections').doc(sectionId).get();
-        result.totalStudents = sectionDoc.data()?.studentCount || 0;
-        
-        if (result.totalStudents === 0) return result;
-        
-        // Get attendance records for the past 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const attendanceSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('attendance')
-            .where('date', '>=', thirtyDaysAgo)
-            .get();
-        
-        let totalRecords = 0;
-        attendanceSnapshot.forEach(doc => {
-            const data = doc.data();
-            totalRecords++;
-            
-            if (data.status === 'present') result.presentCount++;
-            if (data.status === 'absent') result.absentCount++;
-            if (data.status === 'excused') result.excusedCount++;
-        });
-        
-        if (totalRecords > 0) {
-            result.attendanceRate = Math.round((result.presentCount / totalRecords) * 100);
-        }
-    } catch (error) {
-        console.error("Error getting section attendance:", error);
-    }
-    
-    return result;
-}
-
-// Update Report Header
-function updateReportHeader(data) {
-    const header = document.querySelector('.dashboard-header + .card');
-    if (!header) return;
-    
-    const rateElement = header.querySelector('.text-lg');
-    if (rateElement) {
-        rateElement.textContent = `${data.attendanceRate}%`;
-    }
-    
-    const studentCountElement = header.querySelector('p');
-    if (studentCountElement) {
-        studentCountElement.textContent = `${data.totalStudents} students`;
-    }
-}
-
-// Load Monthly Report
-async function loadMonthlyReport(sectionId, month) {
-    const monthlyReport = document.getElementById('monthlyReport');
-    if (!monthlyReport) return;
-    
-    monthlyReport.innerHTML = '<div class="spinner"></div>';
-    
-    try {
-        // Get first and last day of the month
-        const year = new Date().getFullYear();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        
-        // Get attendance records for this month
-        const attendanceSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('attendance')
-            .where('date', '>=', firstDay)
-            .where('date', '<=', lastDay)
-            .get();
-        
-        // Organize data by date
-        const recordsByDate = {};
-        attendanceSnapshot.forEach(doc => {
-            const data = doc.data();
-            const date = data.date.toDate();
-            const dateString = date.toISOString().split('T')[0];
-            
-            if (!recordsByDate[dateString]) {
-                recordsByDate[dateString] = {
-                    present: 0,
-                    absent: 0,
-                    excused: 0,
-                    total: 0
-                };
-            }
-            
-            recordsByDate[dateString][data.status]++;
-            recordsByDate[dateString].total++;
-        });
-        
-        // Generate calendar view
-        const monthName = firstDay.toLocaleString('default', { month: 'long' });
-        let calendarHTML = `
-            <h4>${monthName} ${year}</h4>
-            <div class="calendar-grid">
-                <div class="calendar-header">Sun</div>
-                <div class="calendar-header">Mon</div>
-                <div class="calendar-header">Tue</div>
-                <div class="calendar-header">Wed</div>
-                <div class="calendar-header">Thu</div>
-                <div class="calendar-header">Fri</div>
-                <div class="calendar-header">Sat</div>
-        `;
-        
-        // Calculate days in month and starting day
-        const daysInMonth = lastDay.getDate();
-        const startDay = firstDay.getDay();
-        
-        // Add empty cells for days before the 1st
-        for (let i = 0; i < startDay; i++) {
-            calendarHTML += '<div class="calendar-day empty"></div>';
-        }
-        
-        // Add days of the month
-        for (let day = 1; day <= daysInMonth; day++) {
-            const currentDate = new Date(year, month, day);
-            const dateString = currentDate.toISOString().split('T')[0];
-            const dayRecords = recordsByDate[dateString] || { present: 0, absent: 0, excused: 0, total: 0 };
-            const rate = dayRecords.total > 0 ? Math.round((dayRecords.present / dayRecords.total) * 100) : 0;
-            
-            // Determine color based on attendance rate
-            let dayClass = 'no-data';
-            if (dayRecords.total > 0) {
-                if (rate >= 80) dayClass = 'high-attendance';
-                else if (rate >= 50) dayClass = 'medium-attendance';
-                else dayClass = 'low-attendance';
-            }
-            
-            calendarHTML += `
-                <div class="calendar-day ${dayClass}" data-date="${dateString}">
-                    <div class="day-number">${day}</div>
-                    ${dayRecords.total > 0 ? `
-                        <div class="day-stats">
-                            <span class="present">${dayRecords.present}</span>
-                            <span class="absent">${dayRecords.absent}</span>
+        // Render Dashboard
+        function renderDashboard() {
+            currentView = 'dashboard';
+            appContainer.innerHTML = `
+                <div class="dashboard">
+                    <div class="drawer">
+                        <div class="drawer-header">
+                            <button class="menu-toggle" id="drawer-toggle" aria-label="Toggle menu">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <h2>NearCheck</h2>
                         </div>
-                    ` : ''}
+                        <div class="drawer-menu">
+                            <a href="#" class="menu-item active" data-view="dashboard" aria-current="page">
+                                <i class="fas fa-home"></i>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="#" class="menu-item" data-view="sections">
+                                <i class="fas fa-layer-group"></i>
+                                <span>My Sections</span>
+                            </a>
+                            ${userRole === 'teacher' ? `
+                                <a href="#" class="menu-item" data-view="students">
+                                    <i class="fas fa-users"></i>
+                                    <span>My Students</span>
+                                </a>
+                                <a href="#" class="menu-item" data-view="reports">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <span>Attendance Reports</span>
+                                </a>
+                            ` : ''}
+                            <a href="#" class="menu-item" data-view="permissions">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Permissions</span>
+                            </a>
+                            <a href="#" class="menu-item" data-view="account">
+                                <i class="fas fa-user"></i>
+                                <span>Account</span>
+                            </a>
+                        </div>
+                        <div class="drawer-footer">
+                            <button class="button button-danger" id="sign-out-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="main-content">
+                        <div class="content-header">
+                            <h1>Dashboard</h1>
+                            <button class="menu-toggle" id="mobile-drawer-toggle" aria-label="Toggle menu">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
+                        <div class="content-body" id="content-area"></div>
+                    </div>
                 </div>
             `;
+
+            // Set up event listeners
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const view = item.getAttribute('data-view');
+                    setActiveMenuItem(view);
+                    renderContent(view);
+                });
+            });
+
+            document.getElementById('sign-out-btn').addEventListener('click', () => {
+                auth.signOut();
+            });
+
+            document.getElementById('drawer-toggle').addEventListener('click', toggleDrawer);
+            document.getElementById('mobile-drawer-toggle').addEventListener('click', toggleDrawer);
+
+            // Initialize responsive drawer state
+            updateDrawerState();
+
+            // Render initial content
+            renderContent('dashboard');
         }
-        
-        calendarHTML += '</div>'; // Close calendar-grid
-        
-        // Add detailed attendance for selected date (default to today)
-        const today = new Date();
-        const todayString = today.toISOString().split('T')[0];
-        const selectedDate = recordsByDate[todayString] ? todayString : Object.keys(recordsByDate)[0];
-        
-        let detailHTML = '';
-        if (selectedDate) {
-            const detailRecords = await getAttendanceForDate(sectionId, selectedDate);
-            
-            detailHTML = `
-                <div class="mt-4">
-                    <h4>Attendance on ${new Date(selectedDate).toLocaleDateString()}</h4>
-                    ${detailRecords.length > 0 ? `
-                        <div class="attendance-detail">
-                            ${detailRecords.map(record => `
-                                <div class="flex align-items-center justify-content-between p-2 border-bottom">
-                                    <div>
-                                        <strong>${record.studentName}</strong>
-                                        <div class="text-sm">${record.time}</div>
-                                    </div>
-                                    <div class="status-badge ${getStatusClass(record.status)}">${record.status}</div>
+
+        // Toggle drawer visibility
+        function toggleDrawer() {
+            document.querySelector('.drawer').classList.toggle('open');
+        }
+
+        // Update drawer state based on screen size
+        function updateDrawerState() {
+            const drawer = document.querySelector('.drawer');
+            if (window.innerWidth >= 992) {
+                drawer.classList.add('open');
+            } else {
+                drawer.classList.remove('open');
+            }
+        }
+
+        // Set Active Menu Item
+        function setActiveMenuItem(view) {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+                item.removeAttribute('aria-current');
+                if (item.getAttribute('data-view') === view) {
+                    item.classList.add('active');
+                    item.setAttribute('aria-current', 'page');
+                }
+            });
+        }
+
+        // Render Content
+        function renderContent(view) {
+            const contentArea = document.getElementById('content-area');
+            if (!contentArea) return;
+
+            // Update page title
+            document.querySelector('.content-header h1').textContent = view.charAt(0).toUpperCase() + view.slice(1).replace(/-/g, ' ');
+
+            switch (view) {
+                case 'dashboard':
+                    renderDashboardContent();
+                    break;
+                case 'sections':
+                    renderSectionsContent();
+                    break;
+                case 'students':
+                    renderStudentsContent();
+                    break;
+                case 'reports':
+                    renderReportsContent();
+                    break;
+                case 'permissions':
+                    renderPermissionsContent();
+                    break;
+                case 'account':
+                    renderAccountContent();
+                    break;
+                default:
+                    renderDashboardContent();
+            }
+        }
+
+        // Render Dashboard Content
+        function renderDashboardContent() {
+            const now = new Date();
+            const hours = now.getHours();
+            let greeting = 'Good morning';
+
+            if (hours >= 12 && hours < 17) {
+                greeting = 'Good afternoon';
+            } else if (hours >= 17 || hours < 5) {
+                greeting = 'Good evening';
+            }
+
+            const firstName = currentUser.displayName ? currentUser.displayName.split(' ')[0] : 'User';
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="greeting">
+                    <h2>${greeting}, ${firstName}</h2>
+                    <p>${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                
+                ${userRole === 'teacher' ? `
+                    <div class="header-actions" style="margin-bottom: 24px;">
+                        <button class="button button-primary" id="create-section-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>Create Section</span>
+                        </button>
+                    </div>
+                ` : ''}
+                
+                ${sections.length > 0 ? `
+                    <div class="section-carousel">
+                        ${sections.map(section => `
+                            <div class="section-card card" data-section-id="${section.id}">
+                                <div class="section-menu" aria-label="Section options">
+                                    <i class="fas fa-ellipsis-v"></i>
                                 </div>
+                                <h3>${section.name}</h3>
+                                <p>${section.subject}</p>
+                                <span class="section-id">${section.id}</span>
+                                ${userRole === 'teacher' ? `
+                                    <p>${section.students ? section.students.length : 0} students</p>
+                                    <div class="section-actions">
+                                        <button class="button button-primary start-session-btn" aria-label="Start attendance session for ${section.name}">
+                                            Start Session
+                                        </button>
+                                    </div>
+                                ` : `
+                                    <div class="teacher-info">
+                                        <div class="teacher-avatar">${section.teacherName ? section.teacherName.charAt(0) : 'T'}</div>
+                                        <span>${section.teacherName || 'Teacher'}</span>
+                                    </div>
+                                    <div class="section-actions">
+                                        <button class="button button-primary checkin-btn" aria-label="Check in to ${section.name}">
+                                            Check In
+                                        </button>
+                                    </div>
+                                `}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-state">
+                        <i class="fas fa-layer-group"></i>
+                        <h3>No Sections Found</h3>
+                        <p>${userRole === 'teacher' ? 'Create your first section to get started with attendance tracking' : 'Join a section using an invitation link from your teacher to begin checking in'}</p>
+                        ${userRole === 'teacher' ? `
+                            <button class="button button-primary mt-4" id="create-section-btn-2">
+                                Create Section
+                            </button>
+                        ` : `
+                            <button class="button button-primary mt-4" id="join-section-btn">
+                                Join Section
+                            </button>
+                        `}
+                    </div>
+                `}
+            `;
+
+            // Set up event listeners
+            if (userRole === 'teacher') {
+                const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
+                if (createSectionBtn) {
+                    createSectionBtn.addEventListener('click', () => showCreateSectionModal());
+                }
+
+                document.querySelectorAll('.start-session-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.section-card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        showStartSessionModal(section);
+                    });
+                });
+            } else {
+                const joinSectionBtn = document.getElementById('join-section-btn');
+                if (joinSectionBtn) {
+                    joinSectionBtn.addEventListener('click', () => renderSectionsContent());
+                }
+
+                document.querySelectorAll('.checkin-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.section-card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        handleStudentCheckIn(section);
+                    });
+                });
+            }
+        }
+
+        // Render Sections Content
+        function renderSectionsContent() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                ${userRole === 'teacher' ? `
+                    <div class="header-actions" style="margin-bottom: 24px;">
+                        <button class="button button-primary" id="create-section-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>Create Section</span>
+                        </button>
+                    </div>
+                ` : ''}
+                
+                ${sections.length > 0 ? `
+                    <div class="section-list">
+                        ${sections.map(section => `
+                            <div class="card mb-4" data-section-id="${section.id}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <h3>${section.name}</h3>
+                                    <div class="section-menu" aria-label="Section options">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </div>
+                                </div>
+                                <p class="text-muted">${section.subject}</p>
+                                <p><strong>Schedule:</strong> ${section.schedule}</p>
+                                <p><strong>Section ID:</strong> <span class="section-id">${section.id}</span></p>
+                                
+                                ${userRole === 'teacher' ? `
+                                    <div class="section-actions mt-4" style="display: flex; gap: 8px;">
+                                        <button class="button button-primary invite-students-btn">
+                                            <i class="fas fa-user-plus"></i>
+                                            <span>Invite Students</span>
+                                        </button>
+                                        <button class="button button-secondary manage-students-btn">
+                                            <i class="fas fa-users-cog"></i>
+                                            <span>Manage Students</span>
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-state">
+                        <i class="fas fa-layer-group"></i>
+                        <h3>No Sections Found</h3>
+                        <p>${userRole === 'teacher' ? 'Create your first section to start managing attendance' : 'Join a section to begin checking in to classes'}</p>
+                        ${userRole === 'teacher' ? `
+                            <button class="button button-primary mt-4" id="create-section-btn-2">
+                                Create Section
+                            </button>
+                        ` : `
+                            <div class="input-group mt-4">
+                                <input type="text" id="join-section-input" placeholder="Enter Section ID">
+                                <button class="button button-primary w-100" id="join-section-btn">
+                                    Join Section
+                                </button>
+                            </div>
+                            <p class="text-center text-muted mt-2">Get the section ID from your teacher</p>
+                        `}
+                    </div>
+                `}
+            `;
+
+            // Set up event listeners
+            if (userRole === 'teacher') {
+                const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
+                if (createSectionBtn) {
+                    createSectionBtn.addEventListener('click', () => showCreateSectionModal());
+                }
+
+                document.querySelectorAll('.invite-students-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        showInviteStudentsModal(section);
+                    });
+                });
+
+                document.querySelectorAll('.manage-students-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const sectionCard = e.target.closest('.card');
+                        const sectionId = sectionCard.getAttribute('data-section-id');
+                        const section = sections.find(s => s.id === sectionId);
+                        showManageStudentsModal(section);
+                    });
+                });
+            } else {
+                const joinSectionBtn = document.getElementById('join-section-btn');
+                if (joinSectionBtn) {
+                    joinSectionBtn.addEventListener('click', async () => {
+                        const sectionId = document.getElementById('join-section-input').value.trim();
+                        if (!sectionId) {
+                            showError('Please enter a section ID');
+                            return;
+                        }
+
+                        try {
+                            showLoading('Joining section...');
+
+                            // Verify section exists
+                            const sectionDoc = await db.collection('sections').doc(sectionId).get();
+                            if (!sectionDoc.exists) {
+                                throw new Error('Section not found. Please check the ID and try again.');
+                            }
+
+                            // Add section to user's sections array
+                            await db.collection('users').doc(currentUser.uid).update({
+                                sections: firebase.firestore.FieldValue.arrayUnion(sectionId)
+                            });
+
+                            // Refresh data
+                            await fetchUserData();
+                            hideLoading();
+                            renderContent('sections');
+                        } catch (error) {
+                            hideLoading();
+                            showError(error.message);
+                        }
+                    });
+                }
+            }
+        }
+
+        // Render Students Content (Teacher only)
+        function renderStudentsContent() {
+            if (userRole !== 'teacher') return;
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                ${students.length > 0 ? `
+                    <div class="students-list">
+                        ${students.map(student => `
+                            <div class="card mb-4" data-student-id="${student.id}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <h3>${student.fullName}</h3>
+                                    <div class="student-menu" aria-label="Student options">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </div>
+                                </div>
+                                <p class="text-muted">${student.email}</p>
+                                <p>Sections: ${student.sections ? student.sections.length : 0}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>No Students Found</h3>
+                        <p>Students will appear here once they join your sections. Invite students to your sections to get started.</p>
+                        <button class="button button-primary mt-4" id="invite-students-btn">
+                            Invite Students
+                        </button>
+                    </div>
+                `}
+            `;
+
+            const inviteStudentsBtn = document.getElementById('invite-students-btn');
+            if (inviteStudentsBtn) {
+                inviteStudentsBtn.addEventListener('click', () => {
+                    if (sections.length > 0) {
+                        renderContent('sections');
+                    } else {
+                        showCreateSectionModal();
+                    }
+                });
+            }
+        }
+
+        // Render Reports Content (Teacher only)
+        function renderReportsContent() {
+            if (userRole !== 'teacher') return;
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="header-actions" style="margin-bottom: 24px;">
+                    <button class="button button-primary" id="export-reports-btn">
+                        <i class="fas fa-file-export"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+                
+                <div class="reports-filters mb-4">
+                    <div style="display: flex; gap: 12px;">
+                        <select class="input-group" id="report-section-filter">
+                            <option value="">All Sections</option>
+                            ${sections.map(section => `
+                                <option value="${section.id}">${section.name}</option>
                             `).join('')}
+                        </select>
+                        <select class="input-group" id="report-time-filter">
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="reports-summary card mb-4">
+                    <h3>Summary</h3>
+                    <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+                        <div class="summary-item">
+                            <p>Total Students</p>
+                            <h2>${students.length}</h2>
                         </div>
-                    ` : '<p>No attendance records for this date</p>'}
+                        <div class="summary-item">
+                            <p>Average Attendance</p>
+                            <h2>85%</h2>
+                        </div>
+                        <div class="summary-item">
+                            <p>Sessions</p>
+                            <h2>12</h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="reports-chart card" style="padding: 20px; height: 300px;">
+                    <h3>Attendance Trend</h3>
+                    <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <p>Chart will be displayed here</p>
+                    </div>
                 </div>
             `;
-        }
-        
-        monthlyReport.innerHTML = calendarHTML + detailHTML;
-        
-        // Add click handlers for calendar days
-        document.querySelectorAll('.calendar-day:not(.empty)').forEach(day => {
-            day.addEventListener('click', async () => {
-                const date = day.getAttribute('data-date');
-                const detailRecords = await getAttendanceForDate(sectionId, date);
-                
-                const detailHTML = `
-                    <div class="mt-4">
-                        <h4>Attendance on ${new Date(date).toLocaleDateString()}</h4>
-                        ${detailRecords.length > 0 ? `
-                            <div class="attendance-detail">
-                                ${detailRecords.map(record => `
-                                    <div class="flex align-items-center justify-content-between p-2 border-bottom">
-                                        <div>
-                                            <strong>${record.studentName}</strong>
-                                            <div class="text-sm">${record.time}</div>
-                                        </div>
-                                        <div class="status-badge ${getStatusClass(record.status)}">${record.status}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : '<p>No attendance records for this date</p>'}
-                    </div>
-                `;
-                
-                // Replace existing detail section
-                const existingDetail = monthlyReport.querySelector('.mt-4');
-                if (existingDetail) {
-                    existingDetail.remove();
+
+            document.getElementById('export-reports-btn').addEventListener('click', () => {
+                showExportReportsModal();
+            });
+
+            // Show/hide custom date range inputs
+            document.getElementById('report-time-filter').addEventListener('change', (e) => {
+                const customRangeGroup = document.getElementById('custom-range-group');
+                if (e.target.value === 'custom' && customRangeGroup) {
+                    customRangeGroup.style.display = 'block';
+                } else if (customRangeGroup) {
+                    customRangeGroup.style.display = 'none';
                 }
-                
-                monthlyReport.insertAdjacentHTML('beforeend', detailHTML);
             });
-        });
-    } catch (error) {
-        console.error("Error loading monthly report:", error);
-        monthlyReport.innerHTML = '<p>Error loading report data</p>';
-    }
-}
+        }
 
-// Get Attendance for Specific Date
-async function getAttendanceForDate(sectionId, dateString) {
-    const date = new Date(dateString);
-    const nextDay = new Date(date);
-    nextDay.setDate(nextDay.getDate() + 1);
-    
-    try {
-        const snapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('attendance')
-            .where('date', '>=', date)
-            .where('date', '<', nextDay)
-            .get();
-        
-        const records = [];
-        
-        // Get student names
-        const studentsSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('students')
-            .get();
-        
-        const students = {};
-        studentsSnapshot.forEach(doc => {
-            students[doc.id] = doc.data().fullName;
-        });
-        
-        // Process attendance records
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const recordDate = data.date.toDate();
-            
-            records.push({
-                studentId: data.studentId,
-                studentName: students[data.studentId] || 'Unknown',
-                status: data.status,
-                time: recordDate.toLocaleTimeString(),
-                date: recordDate
-            });
-        });
-        
-        // Sort by time
-        records.sort((a, b) => a.date - b.date);
-        
-        return records;
-    } catch (error) {
-        console.error("Error getting attendance for date:", error);
-        return [];
-    }
-}
-
-// Render Settings Page
-function renderSettings() {
-    const content = `
-        <div class="container">
-            <header class="header">
-                <button id="openDrawer" class="btn btn-secondary"><i class="fas fa-bars"></i></button>
-                <a href="#" class="header-logo">NearCheck</a>
-                <div class="header-actions">
-                    <button class="btn btn-secondary" id="backToDashboard"><i class="fas fa-arrow-left"></i> Back</button>
-                </div>
-            </header>
-            
-            <main>
-                <div class="dashboard-header">
-                    <h1>Account Settings</h1>
-                </div>
-                
-                <div class="card mb-3">
-                    <h3 class="card-title">Personal Information</h3>
-                    <form id="personalInfoForm">
-                        <div class="form-group">
-                            <label for="displayName" class="form-label">Full Name</label>
-                            <input type="text" id="displayName" class="form-control" value="${currentUser.displayName || ''}">
+        // Render Permissions Content
+        function renderPermissionsContent() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="card mb-4">
+                    <h3 class="mb-4">Geolocation Access</h3>
+                    <p>NearCheck Lite requires geolocation access to verify your location when checking in to classes.</p>
+                    
+                    <div class="permission-status mt-4">
+                        <h4>Current Status:</h4>
+                        <div id="geolocation-status" class="mt-2">
+                            ${geolocationPermission === 'granted' ? `
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check-circle"></i> Granted
+                                </span>
+                                <p class="text-muted mt-2">You've granted location access. You can check in to classes.</p>
+                            ` : geolocationPermission === 'denied' ? `
+                                <span class="badge badge-danger">
+                                    <i class="fas fa-times-circle"></i> Denied
+                                </span>
+                                <p class="text-muted mt-2">You've denied location access. You won't be able to check in to classes.</p>
+                                <button class="button button-primary mt-2" id="open-settings-btn">
+                                    Open Browser Settings
+                                </button>
+                            ` : `
+                                <span class="badge badge-warning">
+                                    <i class="fas fa-question-circle"></i> Not Determined
+                                </span>
+                                <p class="text-muted mt-2">Location access hasn't been requested yet. It will be requested when you try to check in.</p>
+                            `}
                         </div>
-                        <div class="form-group">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" id="email" class="form-control" value="${currentUser.email}" readonly>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </form>
-                </div>
-                
-                <div class="card mb-3">
-                    <h3 class="card-title">Change Password</h3>
-                    <form id="changePasswordForm">
-                        <div class="form-group">
-                            <label for="currentPassword" class="form-label">Current Password</label>
-                            <input type="password" id="currentPassword" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="newPassword" class="form-label">New Password</label>
-                            <input type="password" id="newPassword" class="form-control" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmNewPassword" class="form-label">Confirm New Password</label>
-                            <input type="password" id="confirmNewPassword" class="form-control" required minlength="6">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Change Password</button>
-                    </form>
+                    </div>
                 </div>
                 
                 <div class="card">
-                    <h3 class="card-title">Danger Zone</h3>
-                    <div class="form-group">
-                        <button id="deleteAccountBtn" class="btn btn-danger">Delete Account</button>
-                        <p class="text-sm mt-1">This will permanently delete your account and all associated data.</p>
-                    </div>
+                    <h3 class="mb-4">How Location Works</h3>
+                    <p>When you check in to a class, NearCheck Lite will:</p>
+                    <ul style="margin-top: 8px; padding-left: 20px;">
+                        <li>Request permission to access your location (if not already granted)</li>
+                        <li>Compare your location with the teacher's location</li>
+                        <li>Verify you're within the allowed distance (typically 50-100 meters)</li>
+                        <li>Record your attendance with timestamp and location data</li>
+                    </ul>
+                    <p class="mt-4">Your location data is only used for attendance verification and is not stored permanently.</p>
                 </div>
-            </main>
-        </div>
-    `;
-    
-    app.innerHTML = content;
-    
-    // Add event listeners
-    document.getElementById('openDrawer').addEventListener('click', toggleDrawer);
-    document.getElementById('backToDashboard').addEventListener('click', loadDashboard);
-    document.getElementById('personalInfoForm').addEventListener('submit', updatePersonalInfo);
-    document.getElementById('changePasswordForm').addEventListener('submit', changePassword);
-    document.getElementById('deleteAccountBtn').addEventListener('click', confirmDeleteAccount);
-}
+            `;
 
-// Update Personal Information
-async function updatePersonalInfo(e) {
-    e.preventDefault();
-    
-    const displayName = document.getElementById('displayName').value.trim();
-    
-    if (!displayName) {
-        showToast("Please enter your name");
-        return;
-    }
-    
-    try {
-        // Update in Firebase Auth
-        await currentUser.updateProfile({
-            displayName
-        });
-        
-        // Update in Firestore
-        await db.collection('users').doc(currentUser.uid).update({
-            fullName: displayName
-        });
-        
-        // Update in all sections (for teachers)
-        if (currentRole === 'teacher') {
-            const sectionsSnapshot = await db.collection('sections')
-                .where('teacherId', '==', currentUser.uid)
-                .get();
-            
-            const batch = db.batch();
-            sectionsSnapshot.forEach(doc => {
-                batch.update(doc.ref, {
-                    teacherName: displayName
-                });
-            });
-            
-            await batch.commit();
-        }
-        
-        showToast("Profile updated successfully");
-    } catch (error) {
-        console.error("Error updating profile:", error);
-        showToast("Error updating profile");
-    }
-}
-
-// Change Password
-async function changePassword(e) {
-    e.preventDefault();
-    
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
-    
-    if (newPassword !== confirmNewPassword) {
-        showToast("New passwords don't match");
-        return;
-    }
-    
-    try {
-        // Reauthenticate user
-        const credential = firebase.auth.EmailAuthProvider.credential(
-            currentUser.email,
-            currentPassword
-        );
-        
-        await currentUser.reauthenticateWithCredential(credential);
-        
-        // Change password
-        await currentUser.updatePassword(newPassword);
-        
-        // Clear form
-        document.getElementById('changePasswordForm').reset();
-        
-        showToast("Password changed successfully");
-    } catch (error) {
-        console.error("Error changing password:", error);
-        showToast(error.message);
-    }
-}
-
-// Confirm Account Deletion
-function confirmDeleteAccount() {
-    const modalContent = `
-        <div class="modal-header">
-            <h3 class="modal-title">Delete Account</h3>
-            <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-            <div class="form-group mt-3">
-                <label for="deletePassword" class="form-label">Confirm your password</label>
-                <input type="password" id="deletePassword" class="form-control" required>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary close-modal">Cancel</button>
-            <button id="confirmDeleteAccountBtn" class="btn btn-danger">Delete Account</button>
-        </div>
-    `;
-    
-    showModal('Delete Account', modalContent);
-    
-    // Add event listeners
-    document.getElementById('confirmDeleteAccountBtn').addEventListener('click', deleteAccount);
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-}
-
-// Delete Account
-async function deleteAccount() {
-    const password = document.getElementById('deletePassword').value;
-    
-    if (!password) {
-        showToast("Please enter your password");
-        return;
-    }
-    
-    try {
-        // Reauthenticate user
-        const credential = firebase.auth.EmailAuthProvider.credential(
-            currentUser.email,
-            password
-        );
-        
-        await currentUser.reauthenticateWithCredential(credential);
-        
-        // Delete user data from Firestore
-        if (currentRole === 'teacher') {
-            // Delete all sections and students
-            const sectionsSnapshot = await db.collection('sections')
-                .where('teacherId', '==', currentUser.uid)
-                .get();
-            
-            const batch = db.batch();
-            sectionsSnapshot.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            await batch.commit();
-        } else {
-            // Remove student from all sections
-            const sectionsSnapshot = await db.collectionGroup('students')
-                .where('__name__', '==', currentUser.uid)
-                .get();
-            
-            const batch = db.batch();
-            sectionsSnapshot.forEach(doc => {
-                batch.delete(doc.ref);
-            });
-            await batch.commit();
-        }
-        
-        // Delete user document
-        await db.collection('users').doc(currentUser.uid).delete();
-        
-        // Delete auth account
-        await currentUser.delete();
-        
-        showToast("Account deleted successfully");
-        closeModal();
-    } catch (error) {
-        console.error("Error deleting account:", error);
-        showToast(error.message);
-    }
-}
-
-// Load Student Dashboard
-async function loadStudentDashboard() {
-    try {
-        // Get student's sections
-        const sectionsSnapshot = await db.collectionGroup('students')
-            .where('__name__', '==', currentUser.uid)
-            .get();
-        
-        currentSections = [];
-        
-        for (const doc of sectionsSnapshot.docs) {
-            const sectionRef = doc.ref.parent.parent;
-            const sectionDoc = await sectionRef.get();
-            
-            if (sectionDoc.exists) {
-                currentSections.push({
-                    id: sectionDoc.id,
-                    ...sectionDoc.data()
+            const openSettingsBtn = document.getElementById('open-settings-btn');
+            if (openSettingsBtn) {
+                openSettingsBtn.addEventListener('click', () => {
+                    // This is a best-effort attempt to help users change settings
+                    // Note: There's no standard way to open browser settings, this is just a guide
+                    showModal({
+                        title: 'Change Location Settings',
+                        body: `
+                            <p>To enable location access for NearCheck Lite:</p>
+                            <ol style="margin-top: 8px; padding-left: 20px;">
+                                <li>Open your browser settings</li>
+                                <li>Navigate to Site Settings or Permissions</li>
+                                <li>Find NearCheck Lite in the list of sites</li>
+                                <li>Change the Location permission to "Allow"</li>
+                                <li>Refresh this page</li>
+                            </ol>
+                            <p class="mt-4">The exact steps vary depending on your browser and device.</p>
+                        `,
+                        buttons: [
+                            { text: 'OK', class: 'button-primary', action: 'close' }
+                        ]
+                    });
                 });
             }
         }
-        
-        // Render dashboard
-        const greeting = getGreeting();
-        const dashboardContent = `
-            <div class="container">
-                <header class="header">
-                    <button id="openDrawer" class="btn btn-secondary"><i class="fas fa-bars"></i></button>
-                    <a href="#" class="header-logo">NearCheck</a>
-                    <div class="header-actions">
-                        <button id="enrollSectionBtn" class="btn btn-primary">+ Enroll</button>
+
+        // Render Account Content
+        function renderAccountContent() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="card mb-4">
+                    <h3 class="mb-4">Personal Information</h3>
+                    <div class="input-group">
+                        <label for="account-name">Full Name</label>
+                        <input type="text" id="account-name" value="${currentUser.displayName || ''}">
                     </div>
-                </header>
+                    <div class="input-group">
+                        <label for="account-email">Email</label>
+                        <input type="email" id="account-email" value="${currentUser.email}" disabled>
+                    </div>
+                    <button class="button button-primary" id="save-account-btn">Save Changes</button>
+                </div>
                 
-                <main>
-                    <div class="dashboard-header">
-                        <h1 class="greeting">${greeting}, ${currentUser.displayName || 'Student'}</h1>
+                <div class="card mb-4">
+                    <h3 class="mb-4">Security</h3>
+                    <button class="button button-secondary" id="change-password-btn">Change Password</button>
+                </div>
+                
+                <div class="card">
+                    <h3 class="mb-4">Danger Zone</h3>
+                    <p class="mb-4">Deleting your account will permanently remove all your data from our systems.</p>
+                    <button class="button button-danger" id="delete-account-btn">Delete Account</button>
+                </div>
+            `;
+
+            document.getElementById('save-account-btn').addEventListener('click', async () => {
+                const newName = document.getElementById('account-name').value.trim();
+
+                if (!newName) {
+                    showError('Please enter your name');
+                    return;
+                }
+
+                try {
+                    showLoading('Updating account...');
+                    await currentUser.updateProfile({
+                        displayName: newName
+                    });
+
+                    await db.collection('users').doc(currentUser.uid).update({
+                        fullName: newName
+                    });
+
+                    hideLoading();
+                    showSuccess('Account updated successfully');
+                } catch (error) {
+                    hideLoading();
+                    showError(error.message || 'Failed to update account');
+                }
+            });
+
+            document.getElementById('change-password-btn').addEventListener('click', () => {
+                showChangePasswordModal();
+            });
+
+            document.getElementById('delete-account-btn').addEventListener('click', () => {
+                showDeleteAccountModal();
+            });
+        }
+
+        // Show Create Section Modal
+        function showCreateSectionModal() {
+            showModal({
+                title: 'Create New Section',
+                body: `
+                    <form id="create-section-form">
+                        <div class="input-group">
+                            <label for="section-name">Section Name</label>
+                            <input type="text" id="section-name" required placeholder="e.g. Computer Science 101">
+                        </div>
+                        <div class="input-group">
+                            <label for="section-subject">Subject</label>
+                            <input type="text" id="section-subject" required placeholder="e.g. Computer Science">
+                        </div>
+                        <div class="input-group">
+                            <label for="section-schedule">Schedule</label>
+                            <input type="text" id="section-schedule" placeholder="e.g. Mon, Wed, Fri 9:00-10:30 AM" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="section-range">Check-in Range (meters)</label>
+                            <input type="number" id="section-range" value="50" min="5" max="150" required>
+                            <p class="input-hint">Students must be within this distance to check in</p>
+                        </div>
+                    </form>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Create Section', class: 'button-primary', action: async () => {
+                        const name = document.getElementById('section-name').value.trim();
+                        const subject = document.getElementById('section-subject').value.trim();
+                        const schedule = document.getElementById('section-schedule').value.trim();
+                        const range = parseInt(document.getElementById('section-range').value);
+
+                        if (!name || !subject || !schedule || !range) {
+                            showError('Please fill all fields');
+                            return false;
+                        }
+
+                        try {
+                            showLoading('Creating section...');
+
+                            // Get teacher's current location
+                            const position = await getCurrentPositionWithPermission();
+
+                            // Create section in Firestore
+                            const sectionRef = await db.collection('sections').add({
+                                name,
+                                subject,
+                                schedule,
+                                checkInRange: range,
+                                teacherId: currentUser.uid,
+                                teacherName: currentUser.displayName || 'Teacher',
+                                teacherLocation: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                students: []
+                            });
+
+                            // Update local state
+                            sections.push({
+                                id: sectionRef.id,
+                                name,
+                                subject,
+                                schedule,
+                                checkInRange: range,
+                                teacherId: currentUser.uid
+                            });
+
+                            hideLoading();
+                            showSuccess('Section created successfully');
+                            renderContent('sections');
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            showError(error.message || 'Failed to create section');
+                            return false;
+                        }
+                    }}
+                ]
+            });
+        }
+
+        // Show Start Session Modal
+        function showStartSessionModal(section) {
+            showModal({
+                title: `Start Attendance Session - ${section.name}`,
+                body: `
+                    <p>You're about to start an attendance session for <strong>${section.name}</strong>.</p>
+                    
+                    <div class="input-group mt-4">
+                        <label for="session-duration">Session Duration (minutes)</label>
+                        <input type="number" id="session-duration" value="15" min="1" max="120">
                     </div>
                     
-                    <h2>My Classes</h2>
-                    ${currentSections.length > 0 ? `
-                        <div class="section-carousel">
-                            ${currentSections.map(section => {
-                                // Check if there's an active session for this section
-                                const hasActiveSession = false; // Would check RTDB in real implementation
-                                
-                                return `
-                                    <div class="section-card" data-section-id="${section.id}">
-                                        <div class="section-actions">
-                                            <button class="btn btn-secondary btn-sm section-menu-btn"><i class="fas fa-ellipsis-v"></i></button>
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="auto-end-checkbox" checked> Auto-end session after duration
+                        </label>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="require-location-checkbox" checked> Require student location
+                        </label>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Start Session', class: 'button-primary', action: async () => {
+                        const duration = parseInt(document.getElementById('session-duration').value);
+                        const autoEnd = document.getElementById('auto-end-checkbox').checked;
+                        const requireLocation = document.getElementById('require-location-checkbox').checked;
+
+                        if (!duration || duration < 1) {
+                            showError('Please enter a valid duration');
+                            return false;
+                        }
+
+                        try {
+                            showLoading('Starting session...');
+
+                            // Get teacher's current location
+                            const position = await getCurrentPositionWithPermission();
+
+                            // Create session in Firestore
+                            const sessionRef = await db.collection('sessions').add({
+                                sectionId: section.id,
+                                teacherId: currentUser.uid,
+                                startTime: firebase.firestore.FieldValue.serverTimestamp(),
+                                endTime: null,
+                                duration,
+                                autoEnd,
+                                requireLocation,
+                                location: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                                range: section.checkInRange,
+                                status: 'active',
+                                attendees: []
+                            });
+
+                            // Update local state
+                            activeSession = {
+                                id: sessionRef.id,
+                                sectionId: section.id,
+                                startTime: new Date(),
+                                duration,
+                                autoEnd,
+                                status: 'active'
+                            };
+
+                            hideLoading();
+                            showSuccess('Attendance session started');
+                            renderDashboardContent();
+                            
+                            // If auto-end is enabled, set timeout to end session
+                            if (autoEnd) {
+                                setTimeout(() => {
+                                    endSession(sessionRef.id);
+                                }, duration * 60 * 1000);
+                            }
+                            
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            showError(error.message || 'Failed to start session');
+                            return false;
+                        }
+                    }}
+                ]
+            });
+        }
+
+        // End Session
+        async function endSession(sessionId) {
+            try {
+                await db.collection('sessions').doc(sessionId).update({
+                    status: 'ended',
+                    endTime: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                activeSession = null;
+                renderDashboardContent();
+                showSuccess('Attendance session ended');
+            } catch (error) {
+                showError('Failed to end session: ' + error.message);
+            }
+        }
+
+        // Show Invite Students Modal
+        function showInviteStudentsModal(section) {
+            const inviteLink = `${window.location.origin}${window.location.pathname}?sectionid=${section.id}`;
+            const qr = qrcode(0, 'L');
+            qr.addData(inviteLink);
+            qr.make();
+            const qrSvg = qr.createSvgTag(4);
+
+            showModal({
+                title: `Invite Students - ${section.name}`,
+                body: `
+                    <div class="qr-code-container">
+                        <div class="qr-code" id="qr-code">${qrSvg}</div>
+                        <p>Scan this QR code to join</p>
+                    </div>
+                    
+                    <div class="input-group mt-4">
+                        <label for="invite-link">Invitation Link</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="invite-link" value="${inviteLink}" readonly>
+                            <button class="button button-secondary" id="copy-link-btn" aria-label="Copy invitation link">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="section-id">Section ID</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="section-id" value="${section.id}" readonly>
+                            <button class="button button-secondary" id="copy-id-btn" aria-label="Copy section ID">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Done', class: 'button-primary', action: 'close' }
+                ],
+                onRender: (modal) => {
+                    modal.querySelector('#copy-link-btn').addEventListener('click', () => {
+                        const linkInput = document.getElementById('invite-link');
+                        linkInput.select();
+                        document.execCommand('copy');
+                        showSuccess('Link copied to clipboard');
+                    });
+
+                    modal.querySelector('#copy-id-btn').addEventListener('click', () => {
+                        const idInput = document.getElementById('section-id');
+                        idInput.select();
+                        document.execCommand('copy');
+                        showSuccess('Section ID copied to clipboard');
+                    });
+                }
+            });
+        }
+
+        // Show Manage Students Modal
+        function showManageStudentsModal(section) {
+            showModal({
+                title: `Manage Students - ${section.name}`,
+                body: `
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-list">
+                                <tr>
+                                    <td colspan="3" style="text-align: center; padding: 16px;">Loading students...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Done', class: 'button-primary', action: 'close' }
+                ],
+                onRender: async (modal) => {
+                    const studentsList = modal.querySelector('#students-list');
+
+                    try {
+                        const querySnapshot = await db.collection('users')
+                            .where('sections', 'array-contains', section.id)
+                            .where('role', '==', 'student')
+                            .get();
+
+                        studentsList.innerHTML = '';
+
+                        if (querySnapshot.empty) {
+                            studentsList.innerHTML = `
+                                <tr>
+                                    <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
+                                </tr>
+                            `;
+                            return;
+                        }
+
+                        querySnapshot.forEach((doc) => {
+                            const student = doc.data();
+                            studentsList.innerHTML += `
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center" style="gap: 8px;">
+                                            <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center;">
+                                                ${student.fullName ? student.fullName.charAt(0) : 'S'}
+                                            </div>
+                                            <div>
+                                                <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
+                                                <div style="font-size: 12px; color: var(--text-tertiary);">${student.email}</div>
+                                            </div>
                                         </div>
-                                        <h3>${section.name}</h3>
-                                        <p>${section.subject}</p>
-                                        <p>Teacher: ${section.teacherName}</p>
-                                        <p>Schedule: ${section.schedule}</p>
-                                        ${hasActiveSession ? `
-                                            <button class="btn btn-primary mt-2 checkin-btn" data-section-id="${section.id}">
-                                                Check In Now
-                                            </button>
-                                        ` : `
-                                            <div class="mt-2 text-sm">No active session</div>
-                                        `}
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    ` : `
-                        <div class="card">
-                            <p>You're not enrolled in any classes yet. Use the Enroll button to join a class.</p>
-                        </div>
-                    `}
-                </main>
-            </div>
-        `;
-        
-        app.innerHTML = dashboardContent;
-        
-        // Add event listeners
-        document.getElementById('openDrawer').addEventListener('click', toggleDrawer);
-        document.getElementById('enrollSectionBtn').addEventListener('click', renderEnrollSection);
-        
-        // Add click handlers for section cards
-        if (currentSections.length > 0) {
-            document.querySelectorAll('.checkin-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const sectionId = e.currentTarget.getAttribute('data-section-id');
-                    startCheckInProcess(sectionId);
-                });
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-success">Active</span>
+                                    </td>
+                                    <td>
+                                        <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+
+                        // Set up event listeners for remove buttons
+                        modal.querySelectorAll('button[data-student-id]').forEach(btn => {
+                            btn.addEventListener('click', async (e) => {
+                                const studentId = e.target.getAttribute('data-student-id');
+                                if (confirm('Are you sure you want to remove this student from the section?')) {
+                                    try {
+                                        showLoading('Removing student...');
+
+                                        // Remove section from student's sections array
+                                        await db.collection('users').doc(studentId).update({
+                                            sections: firebase.firestore.FieldValue.arrayRemove(section.id)
+                                        });
+
+                                        // Refresh the list
+                                        showManageStudentsModal(section);
+                                        hideLoading();
+                                        showSuccess('Student removed from section');
+                                    } catch (error) {
+                                        hideLoading();
+                                        showError('Failed to remove student: ' + error.message);
+                                    }
+                                }
+                            });
+                        });
+                    } catch (error) {
+                        studentsList.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 16px; color: var(--error);">Error loading students: ${error.message}</td>
+                            </tr>
+                        `;
+                    }
+                }
             });
-            
-            document.querySelectorAll('.section-menu-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const sectionCard = e.currentTarget.closest('.section-card');
-                    const sectionId = sectionCard.getAttribute('data-section-id');
-                    showStudentSectionMenu(sectionId, e.currentTarget);
-                });
+        }
+
+        // Show Export Reports Modal
+        function showExportReportsModal() {
+            showModal({
+                title: 'Export Attendance Data',
+                body: `
+                    <div class="input-group">
+                        <label for="export-format">Format</label>
+                        <select id="export-format">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="export-time-range">Time Range</label>
+                        <select id="export-time-range">
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group" id="custom-range-group" style="display: none;">
+                        <label for="export-start-date">Start Date</label>
+                        <input type="date" id="export-start-date">
+                        
+                        <label for="export-end-date" style="margin-top: 8px;">End Date</label>
+                        <input type="date" id="export-end-date">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="export-section">Section</label>
+                        <select id="export-section">
+                            <option value="all">All Sections</option>
+                            ${sections.map(section => `
+                                <option value="${section.id}">${section.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Export Data', class: 'button-primary', action: () => {
+                        // In a real app, this would generate and download the report
+                        // For this demo, we'll just show a success message
+                        showSuccess('Export request received. Data will be downloaded shortly.');
+                        return true;
+                    }}
+                ],
+                onRender: (modal) => {
+                    modal.querySelector('#export-time-range').addEventListener('change', (e) => {
+                        const customRangeGroup = modal.querySelector('#custom-range-group');
+                        if (e.target.value === 'custom') {
+                            customRangeGroup.style.display = 'block';
+                        } else {
+                            customRangeGroup.style.display = 'none';
+                        }
+                    });
+                }
             });
         }
-    } catch (error) {
-        console.error("Error loading student dashboard:", error);
-        showToast("Error loading dashboard");
-    }
-}
 
-// Render Enroll Section
-function renderEnrollSection() {
-    const modalContent = `
-        <div class="modal-header">
-            <h3 class="modal-title">Enroll in a Class</h3>
-            <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label for="sectionCode" class="form-label">Enter Section ID</label>
-                <input type="text" id="sectionCode" class="form-control" placeholder="e.g. ABC123">
-            </div>
-            <div class="form-group mt-3">
-                <p>Or use your teacher's invite link</p>
-                <input type="text" id="inviteLink" class="form-control" placeholder="Paste invite link here">
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary close-modal">Cancel</button>
-            <button id="enrollSubmitBtn" class="btn btn-primary">Enroll</button>
-        </div>
-    `;
-    
-    showModal('Enroll in Class', modalContent);
-    
-    // Add event listeners
-    document.getElementById('enrollSubmitBtn').addEventListener('click', handleEnroll);
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-    
-    // Parse section ID from invite link if pasted
-    document.getElementById('inviteLink').addEventListener('input', (e) => {
-        const url = new URL(e.target.value);
-        const sectionId = url.searchParams.get('sectionid');
-        if (sectionId) {
-            document.getElementById('sectionCode').value = sectionId;
-        }
-    });
-}
+        // Show Change Password Modal
+        function showChangePasswordModal() {
+            showModal({
+                title: 'Change Password',
+                body: `
+                    <div class="input-group">
+                        <label for="current-password">Current Password</label>
+                        <input type="password" id="current-password" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" required minlength="6">
+                        <p class="input-hint">Minimum 6 characters</p>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirm-new-password">Confirm New Password</label>
+                        <input type="password" id="confirm-new-password" required minlength="6">
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Change Password', class: 'button-primary', action: async () => {
+                        const currentPassword = document.getElementById('current-password').value;
+                        const newPassword = document.getElementById('new-password').value;
+                        const confirmNewPassword = document.getElementById('confirm-new-password').value;
 
-// Handle Enroll
-async function handleEnroll() {
-    const sectionId = document.getElementById('sectionCode').value.trim();
-    
-    if (!sectionId) {
-        showToast("Please enter a Section ID");
-        return;
-    }
-    
-    try {
-        // Check if section exists
-        const sectionRef = db.collection('sections').doc(sectionId);
-        const sectionDoc = await sectionRef.get();
-        
-        if (!sectionDoc.exists) {
-            showToast("Invalid Section ID. Please check with your teacher.");
-            return;
-        }
-        
-        // Check if already enrolled
-        const studentRef = sectionRef.collection('students').doc(currentUser.uid);
-        const studentDoc = await studentRef.get();
-        
-        if (studentDoc.exists) {
-            showToast("You're already enrolled in this class");
-            return;
-        }
-        
-        // Add student to section
-        await studentRef.set({
-            fullName: currentUser.displayName || 'Student',
-            email: currentUser.email,
-            joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Increment student count
-        await sectionRef.update({
-            studentCount: firebase.firestore.FieldValue.increment(1)
-        });
-        
-        showToast("Enrolled successfully!");
-        closeModal();
-        loadStudentDashboard();
-    } catch (error) {
-        console.error("Error enrolling:", error);
-        showToast("Error enrolling in class");
-    }
-}
+                        if (!currentPassword || !newPassword || !confirmNewPassword) {
+                            showError('Please fill all fields');
+                            return false;
+                        }
 
-// Show Student Section Menu
-function showStudentSectionMenu(sectionId, buttonElement) {
-    const section = currentSections.find(s => s.id === sectionId);
-    if (!section) return;
-    
-    const rect = buttonElement.getBoundingClientRect();
-    const menuContent = `
-        <div class="dropdown-menu" style="position: absolute; top: ${rect.bottom + 5}px; left: ${rect.left - 150}px; width: 200px;">
-            <div class="card">
-                <div class="dropdown-item" data-action="viewAttendance"><i class="fas fa-calendar-check"></i> View Attendance</div>
-                <div class="dropdown-item" data-action="leave"><i class="fas fa-sign-out-alt"></i> Leave Class</div>
-            </div>
-        </div>
-    `;
-    
-    // Remove any existing dropdown
-    const existingDropdown = document.querySelector('.dropdown-menu');
-    if (existingDropdown) existingDropdown.remove();
-    
-    // Add new dropdown
-    document.body.insertAdjacentHTML('beforeend', menuContent);
-    
-    // Add click handlers
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            const action = e.currentTarget.getAttribute('data-action');
-            handleStudentSectionAction(sectionId, action);
-            document.querySelector('.dropdown-menu').remove();
-        });
-    });
-    
-    // Close menu when clicking outside
-    setTimeout(() => {
-        document.addEventListener('click', function clickOutside(e) {
-            if (!e.target.closest('.dropdown-menu') && e.target !== buttonElement) {
-                document.querySelector('.dropdown-menu').remove();
-                document.removeEventListener('click', clickOutside);
+                        if (newPassword !== confirmNewPassword) {
+                            showError('New passwords do not match');
+                            return false;
+                        }
+
+                        if (newPassword.length < 6) {
+                            showError('Password must be at least 6 characters');
+                            return false;
+                        }
+
+                        try {
+                            showLoading('Changing password...');
+
+                            // Reauthenticate user
+                            const credential = firebase.auth.EmailAuthProvider.credential(
+                                currentUser.email,
+                                currentPassword
+                            );
+
+                            await currentUser.reauthenticateWithCredential(credential);
+
+                            // Update password
+                            await currentUser.updatePassword(newPassword);
+
+                            hideLoading();
+                            showSuccess('Password changed successfully');
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            if (error.code === 'auth/wrong-password') {
+                                showError('Current password is incorrect');
+                            } else {
+                                showError(error.message || 'Failed to change password');
+                            }
+                            return false;
+                        }
+                    }}
+                ]
+            });
+        }
+
+        // Show Delete Account Modal
+        function showDeleteAccountModal() {
+            showModal({
+                title: 'Delete Account',
+                body: `
+                    <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                    <p class="mb-4">All your data will be permanently removed from our systems.</p>
+                    
+                    <div class="input-group">
+                        <label for="delete-password">Enter your password to confirm</label>
+                        <input type="password" id="delete-password" required>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Delete Account', class: 'button-danger', action: async () => {
+                        const password = document.getElementById('delete-password').value;
+
+                        if (!password) {
+                            showError('Please enter your password');
+                            return false;
+                        }
+
+                        try {
+                            showLoading('Deleting account...');
+
+                            // Reauthenticate user
+                            const credential = firebase.auth.EmailAuthProvider.credential(
+                                currentUser.email,
+                                password
+                            );
+
+                            await currentUser.reauthenticateWithCredential(credential);
+
+                            // Delete user from Firebase Auth
+                            await currentUser.delete();
+
+                            // Delete user data from Firestore
+                            await db.collection('users').doc(currentUser.uid).delete();
+
+                            hideLoading();
+                            showSuccess('Account deleted successfully');
+                            
+                            // User will be automatically signed out by the auth state listener
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            if (error.code === 'auth/wrong-password') {
+                                showError('Incorrect password');
+                            } else {
+                                showError(error.message || 'Failed to delete account');
+                            }
+                            return false;
+                        }
+                    }}
+                ]
+            });
+        }
+
+        // Show Forgot Password Modal
+        function showForgotPasswordModal() {
+            showModal({
+                title: 'Reset Password',
+                body: `
+                    <p>Enter your email address and we'll send you a link to reset your password.</p>
+                    
+                    <div class="input-group mt-4">
+                        <label for="reset-email">Email</label>
+                        <input type="email" id="reset-email" required>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', class: 'button-secondary', action: 'close' },
+                    { text: 'Send Reset Link', class: 'button-primary', action: async () => {
+                        const email = document.getElementById('reset-email').value.trim();
+
+                        if (!email) {
+                            showError('Please enter your email address');
+                            return false;
+                        }
+
+                        try {
+                            showLoading('Sending reset link...');
+                            await auth.sendPasswordResetEmail(email);
+                            hideLoading();
+                            showSuccess('Password reset link sent to your email');
+                            return true;
+                        } catch (error) {
+                            hideLoading();
+                            if (error.code === 'auth/user-not-found') {
+                                showError('No account found with this email');
+                            } else {
+                                showError(error.message || 'Failed to send reset link');
+                            }
+                            return false;
+                        }
+                    }}
+                ]
+            });
+        }
+
+        // Generic Modal Function
+        function showModal(options) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>${options.title}</h2>
+                        <button class="close-button" aria-label="Close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${options.body}
+                    </div>
+                    <div class="modal-footer">
+                        ${options.buttons.map(btn => `
+                            <button class="button ${btn.class}" id="${btn.text.toLowerCase().replace(' ', '-')}-btn">
+                                ${btn.text}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+
+            // Set up event listeners
+            const closeModal = () => {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            };
+
+            modal.querySelector('.close-button').addEventListener('click', closeModal);
+
+            options.buttons.forEach(btn => {
+                const button = modal.querySelector(`#${btn.text.toLowerCase().replace(' ', '-')}-btn`);
+                if (btn.action === 'close') {
+                    button.addEventListener('click', closeModal);
+                } else {
+                    button.addEventListener('click', async () => {
+                        const result = await btn.action();
+                        if (result) {
+                            closeModal();
+                        }
+                    });
+                }
+            });
+
+            // Call onRender callback if provided
+            if (options.onRender) {
+                options.onRender(modal);
+            }
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        // Handle Student Check-In
+        async function handleStudentCheckIn(section) {
+            try {
+                showLoading('Preparing check-in...');
+
+                // Check if there's an active session for this section
+                const sessionsSnapshot = await db.collection('sessions')
+                    .where('sectionId', '==', section.id)
+                    .where('status', '==', 'active')
+                    .get();
+
+                if (sessionsSnapshot.empty) {
+                    throw new Error('No active session found for this section');
+                }
+
+                const session = sessionsSnapshot.docs[0].data();
+                const sessionId = sessionsSnapshot.docs[0].id;
+
+                // Check if student already checked in
+                if (session.attendees && session.attendees.includes(currentUser.uid)) {
+                    throw new Error('You have already checked in to this session');
+                }
+
+                // Get student's current location if required
+                let studentLocation = null;
+                let distance = 0;
+                
+                if (session.requireLocation) {
+                    const position = await getCurrentPositionWithPermission();
+                    studentLocation = new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude);
+
+                    // Calculate distance between teacher and student
+                    distance = calculateDistance(
+                        session.location.latitude,
+                        session.location.longitude,
+                        studentLocation.latitude,
+                        studentLocation.longitude
+                    );
+
+                    if (distance > session.range) {
+                        throw new Error(`You are too far from the check-in location (${Math.round(distance)}m away, maximum is ${session.range}m)`);
+                    }
+                }
+
+                // Record attendance
+                await db.collection('attendance').add({
+                    sessionId,
+                    sectionId: section.id,
+                    studentId: currentUser.uid,
+                    studentName: currentUser.displayName || 'Student',
+                    checkInTime: firebase.firestore.FieldValue.serverTimestamp(),
+                    location: studentLocation,
+                    distance,
+                    status: 'present',
+                    deviceInfo: navigator.userAgent
+                });
+
+                // Add to session attendees
+                await db.collection('sessions').doc(sessionId).update({
+                    attendees: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+                });
+
+                hideLoading();
+                showSuccess('Checked in successfully!');
+            } catch (error) {
+                hideLoading();
+                showError(error.message);
+            }
+        }
+
+        // Get Current Position with Permission Handling
+        async function getCurrentPositionWithPermission() {
+            try {
+                if (geolocationPermission === 'denied') {
+                    throw new Error('Location access was denied. Please enable it in your browser settings to check in.');
+                }
+
+                if (geolocationPermission === 'prompt') {
+                    showLoading('Requesting location access...');
+                }
+
+                const position = await getCurrentPosition();
+                
+                if (geolocationPermission === 'prompt') {
+                    // If we got here, permission was granted
+                    geolocationPermission = 'granted';
+                    hideLoading();
+                }
+                
+                return position;
+            } catch (error) {
+                if (geolocationPermission === 'prompt') {
+                    hideLoading();
+                }
+                
+                if (error.code === error.PERMISSION_DENIED) {
+                    geolocationPermission = 'denied';
+                    throw new Error('Location access was denied. Please enable it in your browser settings to check in.');
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    throw new Error('Location information is unavailable. Please try again or check your connection.');
+                } else if (error.code === error.TIMEOUT) {
+                    throw new Error('The request to get your location timed out. Please try again.');
+                } else {
+                    throw new Error('An unknown error occurred while getting your location.');
+                }
+            }
+        }
+
+        // Get Current Position
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation is not supported by your browser'));
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => resolve(position),
+                    (error) => reject(error), {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        // Calculate Distance Between Two Points (in meters)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        // Show Loading Indicator
+        function showLoading(message = 'Loading...') {
+            let loading = document.getElementById('loading-overlay');
+
+            if (!loading) {
+                loading = document.createElement('div');
+                loading.id = 'loading-overlay';
+                loading.style.position = 'fixed';
+                loading.style.top = '0';
+                loading.style.left = '0';
+                loading.style.right = '0';
+                loading.style.bottom = '0';
+                loading.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                loading.style.display = 'flex';
+                loading.style.alignItems = 'center';
+                loading.style.justifyContent = 'center';
+                loading.style.zIndex = '1000';
+                loading.style.color = 'white';
+                loading.style.fontSize = '18px';
+                loading.style.backdropFilter = 'blur(4px)';
+
+                loading.innerHTML = `
+                    <div style="text-align: center;">
+                        <div class="spinner" style="width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; margin: 0 auto 16px;"></div>
+                        <p>${message}</p>
+                    </div>
+                `;
+
+                document.body.appendChild(loading);
+
+                // Add spin animation
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            } else {
+                loading.querySelector('p').textContent = message;
+                loading.style.display = 'flex';
+            }
+        }
+
+        // Hide Loading Indicator
+        function hideLoading() {
+            const loading = document.getElementById('loading-overlay');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Show Error Message
+        function showError(message) {
+            // Remove existing error messages
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+
+            const error = document.createElement('div');
+            error.className = 'error-message animated';
+            error.setAttribute('role', 'alert');
+            error.setAttribute('aria-live', 'assertive');
+            error.style.position = 'fixed';
+            error.style.bottom = '20px';
+            error.style.left = '50%';
+            error.style.transform = 'translateX(-50%)';
+            error.style.backgroundColor = 'var(--error)';
+            error.style.color = 'white';
+            error.style.padding = '12px 24px';
+            error.style.borderRadius = 'var(--border-radius)';
+            error.style.boxShadow = 'var(--box-shadow)';
+            error.style.zIndex = '1000';
+            error.style.display = 'flex';
+            error.style.alignItems = 'center';
+            error.style.gap = '8px';
+            error.style.maxWidth = '90%';
+            error.style.wordBreak = 'break-word';
+
+            error.innerHTML = `
+                <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(error);
+
+            setTimeout(() => {
+                error.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    error.remove();
+                }, 300);
+            }, 5000);
+
+            // Add animations if not already present
+            if (!document.getElementById('error-animations')) {
+                const style = document.createElement('style');
+                style.id = 'error-animations';
+                style.innerHTML = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+                        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    }
+                    @keyframes fadeOut {
+                        from { opacity: 1; transform: translateX(-50%) translateY(0); }
+                        to { opacity: 0; transform: translateX(-50%) translateY(10px); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // Show Success Message
+        function showSuccess(message) {
+            // Remove existing success messages
+            document.querySelectorAll('.success-message').forEach(el => el.remove());
+
+            const success = document.createElement('div');
+            success.className = 'success-message animated';
+            success.setAttribute('role', 'status');
+            success.setAttribute('aria-live', 'polite');
+            success.style.position = 'fixed';
+            success.style.bottom = '20px';
+            success.style.left = '50%';
+            success.style.transform = 'translateX(-50%)';
+            success.style.backgroundColor = 'var(--success)';
+            success.style.color = 'white';
+            success.style.padding = '12px 24px';
+            success.style.borderRadius = 'var(--border-radius)';
+            success.style.boxShadow = 'var(--box-shadow)';
+            success.style.zIndex = '1000';
+            success.style.display = 'flex';
+            success.style.alignItems = 'center';
+            success.style.gap = '8px';
+            success.style.maxWidth = '90%';
+            success.style.wordBreak = 'break-word';
+
+            success.innerHTML = `
+                <i class="fas fa-check-circle" aria-hidden="true"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(success);
+
+            setTimeout(() => {
+                success.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    success.remove();
+                }, 300);
+            }, 5000);
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        // Handle window resize for responsive drawer
+        window.addEventListener('resize', () => {
+            if (document.querySelector('.drawer')) {
+                updateDrawerState();
             }
         });
-    }, 10);
-}
-
-// Handle Student Section Action
-function handleStudentSectionAction(sectionId, action) {
-    const section = currentSections.find(s => s.id === sectionId);
-    if (!section) return;
-    
-    switch(action) {
-        case 'viewAttendance':
-            viewStudentAttendance(sectionId);
-            break;
-        case 'leave':
-            leaveSection(sectionId);
-            break;
-        default:
-            break;
-    }
-}
-
-// View Student Attendance
-async function viewStudentAttendance(sectionId) {
-    try {
-        // Get attendance records for this student
-        const attendanceSnapshot = await db.collection('sections')
-            .doc(sectionId)
-            .collection('attendance')
-            .where('studentId', '==', currentUser.uid)
-            .orderBy('date', 'desc')
-            .limit(30)
-            .get();
-        
-        const attendanceRecords = [];
-        attendanceSnapshot.forEach(doc => {
-            attendanceRecords.push(doc.data());
-        });
-        
-        // Calculate stats
-        const totalRecords = attendanceRecords.length;
-        const presentCount = attendanceRecords.filter(r => r.status === 'present').length;
-        const absentCount = attendanceRecords.filter(r => r.status === 'absent').length;
-        const excusedCount = attendanceRecords.filter(r => r.status === 'excused').length;
-        const attendanceRate = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 0;
-        
-        // Render modal
-        const section = currentSections.find(s => s.id === sectionId);
-        const modalContent = `
-            <div class="modal-header">
-                <h3 class="modal-title">My Attendance - ${section?.name || 'Class'}</h3>
-                <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="card mb-3">
-                    <div class="flex align-items-center justify-content-between">
-                        <div>
-                            <h4>${currentUser.displayName || 'Student'}</h4>
-                            <p>${section?.name || 'Class'}</p>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-lg" style="font-size: 2rem; font-weight: 600; color: var(--primary-color);">${attendanceRate}%</div>
-                            <div>Attendance Rate</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <h4>Recent Attendance</h4>
-                <div id="attendanceRecords">
-                    ${attendanceRecords.map(record => {
-                        const date = record.date.toDate ? record.date.toDate() : new Date();
-                        return `
-                            <div class="flex align-items-center justify-content-between p-2 border-bottom">
-                                <div>
-                                    <div>${date.toLocaleDateString()}</div>
-                                    <div class="text-sm">${date.toLocaleTimeString()}</div>
-                                </div>
-                                <div class="status-badge ${getStatusClass(record.status)}">${record.status}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                    
-                    ${attendanceRecords.length === 0 ? '<p>No attendance records yet</p>' : ''}
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary close-modal">Close</button>
-            </div>
-        `;
-        
-        showModal('My Attendance', modalContent, { large: true });
-        
-        // Add event listeners
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', closeModal);
-        });
-    } catch (error) {
-        console.error("Error loading attendance:", error);
-        showToast("Error loading attendance records");
-    }
-}
-
-// Leave Section
-async function leaveSection(sectionId) {
-    const section = currentSections.find(s => s.id === sectionId);
-    if (!section) return;
-    
-    const confirm = window.confirm(`Are you sure you want to leave "${section.name}"?`);
-    if (!confirm) return;
-    
-    try {
-        // Remove student from section
-        await db.collection('sections')
-            .doc(sectionId)
-            .collection('students')
-            .doc(currentUser.uid)
-            .delete();
-        
-        // Decrement student count
-        await db.collection('sections')
-            .doc(sectionId)
-            .update({
-                studentCount: firebase.firestore.FieldValue.increment(-1)
-            });
-        
-        showToast(`You've left ${section.name}`);
-        loadStudentDashboard();
-    } catch (error) {
-        console.error("Error leaving section:", error);
-        showToast("Error leaving section");
-    }
-}
-
-// Start Check-in Process
-async function startCheckInProcess(sectionId) {
-    const section = currentSections.find(s => s.id === sectionId);
-    if (!section) return;
-    
-    try {
-        // Check if there's an active session
-        const sessionRef = rtdb.ref(`sessions/${sectionId}`);
-        const sessionSnapshot = await sessionRef.once('value');
-        const session = sessionSnapshot.val();
-        
-        if (!session || session.status !== 'active') {
-            showToast("No active attendance session for this class");
-            return;
-        }
-        
-        // Get current location
-        const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
-        });
-        
-        const studentLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy
-        };
-        
-        // Calculate distance from teacher
-        const distance = calculateDistance(
-            studentLocation.lat,
-            studentLocation.lng,
-            session.teacherLocation.lat,
-            session.teacherLocation.lng
-        );
-        
-        // Check if within range (including accuracy margin)
-        if (distance > (session.checkinRange + studentLocation.accuracy)) {
-            showToast(`You're too far from the teacher (${Math.round(distance)}m away)`);
-            return;
-        }
-        
-        // Show check-in confirmation
-        showCheckInConfirmation(section, studentLocation, distance);
-    } catch (error) {
-        console.error("Error starting check-in:", error);
-        showToast(error.message);
-    }
-}
-
-// Calculate Distance Between Coordinates (Haversine formula)
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; // Earth radius in meters
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-    
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-    return R * c;
-}
-
-// Show Check-in Confirmation
-function showCheckInConfirmation(section, studentLocation, distance) {
-    const modalContent = `
-        <div class="modal-header">
-            <h3 class="modal-title">Check In - ${section.name}</h3>
-            <button class="btn btn-secondary btn-sm close-modal"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="card mb-3">
-                <div class="flex align-items-center justify-content-between">
-                    <div>
-                        <h4>${currentUser.displayName || 'Student'}</h4>
-                        <p>${section.name}</p>
-                    </div>
-                    <div class="status-badge status-present">Within Range</div>
-                </div>
-            </div>
-            
-            <div class="flex align-items-center justify-content-between mb-3">
-                <div>
-                    <i class="fas fa-location-arrow"></i> Your Location
-                </div>
-                <div>
-                    Accuracy: ${Math.round(studentLocation.accuracy)}m
-                </div>
-            </div>
-            
-            <div class="flex align-items-center justify-content-between mb-3">
-                <div>
-                    <i class="fas fa-chalkboard-teacher"></i> Teacher Location
-                </div>
-                <div>
-                    Distance: ${Math.round(distance)}m
-                </div>
-            </div>
-            
-            <div class="form-group mt-4">
-                <label class="form-label">
-                    <input type="checkbox" id="shareLocation" checked> Share my location with teacher
-                </label>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary close-modal">Cancel</button>
-            <button id="confirmCheckInBtn" class="btn btn-primary">Check In</button>
-        </div>
-    `;
-    
-    showModal('Check In', modalContent);
-    
-    // Add event listeners
-    document.getElementById('confirmCheckInBtn').addEventListener('click', () => {
-        submitCheckIn(section.id, studentLocation);
-    });
-    
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', closeModal);
-    });
-}
-
-// Submit Check-in
-async function submitCheckIn(sectionId, studentLocation) {
-    const shareLocation = document.getElementById('shareLocation').checked;
-    
-    try {
-        // Record check-in in Realtime DB
-        await rtdb.ref(`checkins/${sectionId}/${currentUser.uid}`).set({
-            studentId: currentUser.uid,
-            studentName: currentUser.displayName || 'Student',
-            timestamp: firebase.database.ServerValue.TIMESTAMP,
-            location: shareLocation ? studentLocation : null,
-            deviceInfo: navigator.userAgent
-        });
-        
-        showToast("Check-in submitted! Waiting for teacher approval.");
-        closeModal();
-    } catch (error) {
-        console.error("Error submitting check-in:", error);
-        showToast("Error submitting check-in");
-    }
-}
-
-// Show Modal
-function showModal(title, content, options = {}) {
-    const modalId = 'modal-' + Date.now();
-    const sizeClass = options.large ? ' modal-lg' : '';
-    
-    const modalHTML = `
-        <div id="${modalId}" class="modal${sizeClass}">
-            ${content}
-        </div>
-        <div class="overlay open"></div>
-    `;
-    
-    modalsContainer.innerHTML = modalHTML;
-    
-    // Add animation
-    setTimeout(() => {
-        const modal = document.getElementById(modalId);
-        if (modal) modal.classList.add('open');
-    }, 10);
-    
-    // Return modal element
-    return document.getElementById(modalId);
-}
-
-// Close Modal
-function closeModal() {
-    const modal = modalsContainer.querySelector('.modal.open');
-    if (modal) {
-        modal.classList.remove('open');
-        
-        setTimeout(() => {
-            modalsContainer.innerHTML = '';
-        }, 300);
-    }
-}
-
-// Show Toast Notification
-function showToast(message, duration = 3000) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-    }, duration);
-}
-
-// Initialize the app when DOM is loaded
-document.addEventListener('DOMContentLoaded', initApp);
-
-// Security Headers and Domain Verification
-(function() {
-    // Prevent iframe embedding
-    if (window.self !== window.top) {
-        document.body.innerHTML = '<h1 style="text-align: center; margin-top: 50px;">NearCheck cannot be embedded in iframes</h1>';
-        return;
-    }
-    
-    // Allowed domains (in production, you would whitelist your actual domains)
-    const allowedDomains = [
-        'nearcheck.github.io',
-        'nearcheck-lite.firebaseapp.com',
-        'localhost'
-    ];
-    
-    // Check current domain
-    const currentDomain = window.location.hostname;
-    if (!allowedDomains.includes(currentDomain) && !currentDomain.endsWith('.github.io') && !currentDomain.endsWith('.firebaseapp.com')) {
-        document.body.innerHTML = '<h1 style="text-align: center; margin-top: 50px;">Unauthorized domain</h1>';
-        return;
-    }
-    
-    // Force HTTPS in production
-    if (window.location.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(currentDomain)) {
-        window.location.href = 'https://' + window.location.host + window.location.pathname;
-    }
-})();
