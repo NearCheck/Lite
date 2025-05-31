@@ -945,11 +945,11 @@
                         </div>
                         <div class="summary-item">
                             <p>Average Attendance</p>
-                            <h2>85%</h2>
+                            <h2>0%</h2>
                         </div>
                         <div class="summary-item">
                             <p>Sessions</p>
-                            <h2>12</h2>
+                            <h2>0</h2>
                         </div>
                     </div>
                 </div>
