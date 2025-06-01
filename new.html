@@ -1,0 +1,3305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NearCheck Lite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<style>
+:root {
+  /* Color Palette - Apple-inspired */
+  --primary: #0071e3;
+  --primary-hover: #0077ed;
+  --primary-active: #0062c4;
+  --secondary: #34c759;
+  --tertiary: #af52de;
+  --error: #ff3b30;
+  --warning: #ff9500;
+  --success: #34c759;
+  --info: #5ac8fa;
+  
+  /* Neutral Colors */
+  --background: #ffffff;
+  --background-secondary: #f5f5f7;
+  --background-tertiary: #e5e5ea;
+  --text-primary: #1c1c1e;
+  --text-secondary: #636366;
+  --text-tertiary: #8e8e93;
+  --separator: #d1d1d6;
+  
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.16);
+  
+  /* Typography */
+  --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+  
+  /* Animation Curves */
+  --curve-default: cubic-bezier(0.2, 0, 0, 1);
+  --curve-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --curve-decelerate: cubic-bezier(0, 0, 0, 1);
+  --curve-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --curve-spring: cubic-bezier(0.5, 1.5, 0.5, 1);
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--background);
+  overflow-x: hidden;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: var(--space-sm);
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1rem; }
+h6 { font-size: 0.875rem; }
+
+p {
+  margin-bottom: var(--space-sm);
+  color: var(--text-secondary);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s var(--curve-default);
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.text-muted {
+  color: var(--text-tertiary);
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Layout Utilities */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.mt-4 {
+  margin-top: var(--space-lg);
+}
+
+.mb-4 {
+  margin-bottom: var(--space-lg);
+}
+
+.d-flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+/* Buttons */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 1;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.25s var(--curve-emphasized);
+  will-change: transform, box-shadow, background-color;
+  position: relative;
+  overflow: hidden;
+}
+
+.button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transition: opacity 0.2s var(--curve-default);
+}
+
+.button:hover::after {
+  opacity: 1;
+}
+
+.button:active {
+  transform: scale(0.96);
+  transition-duration: 0.1s;
+}
+
+.button-primary {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.button-primary:hover {
+  background-color: var(--primary-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.button-primary:active {
+  background-color: var(--primary-active);
+  box-shadow: var(--shadow-sm);
+}
+
+.button-secondary {
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.button-secondary:hover {
+  background-color: var(--background-tertiary);
+  box-shadow: var(--shadow-md);
+}
+
+.button-danger {
+  background-color: var(--error);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.button-danger:hover {
+  background-color: #ff453a;
+  box-shadow: var(--shadow-md);
+}
+
+/* Cards */
+.card {
+  background-color: var(--background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-md);
+  transition: all 0.3s var(--curve-emphasized);
+  will-change: transform, box-shadow;
+  border: 1px solid var(--separator);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Inputs */
+.input-group {
+  margin-bottom: var(--space-md);
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--separator);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  transition: all 0.2s var(--curve-default);
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+}
+
+.input-hint {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  margin-top: var(--space-xs);
+}
+
+/* Auth Styles */
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-xl);
+  background-color: var(--background-secondary);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-xl);
+  border-radius: var(--radius-lg);
+  background-color: var(--background);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.auth-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-md);
+  border-radius: var(--radius-lg);
+  background-color: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.auth-footer {
+  margin-top: var(--space-lg);
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.role-selector {
+  display: grid;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.role-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  background-color: var(--background-secondary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s var(--curve-emphasized);
+  text-align: center;
+  will-change: transform, background-color;
+}
+
+.role-button:hover {
+  background-color: var(--background-tertiary);
+  transform: translateY(-2px);
+}
+
+.role-button:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+.role-button i {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-sm);
+  color: var(--primary);
+}
+
+.role-button span {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.role-button small {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-xs);
+}
+
+/* Dashboard Layout */
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background-secondary);
+}
+
+.drawer {
+  width: 280px;
+  background-color: var(--background);
+  border-right: 1px solid var(--separator);
+  transition: transform 0.3s var(--curve-emphasized);
+  will-change: transform;
+  z-index: 100;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  padding: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--separator);
+  height: 60px;
+}
+
+.drawer-header h2 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s var(--curve-default);
+}
+
+.menu-toggle:hover {
+  background-color: var(--background-secondary);
+}
+
+.drawer-menu {
+  padding: var(--space-md) 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
+  transition: all 0.2s var(--curve-default);
+}
+
+.menu-item:hover {
+  color: var(--text-primary);
+  background-color: var(--background-secondary);
+}
+
+.menu-item.active {
+  color: var(--primary);
+  background-color: rgba(0, 113, 227, 0.1);
+}
+
+.menu-item i {
+  width: 24px;
+  text-align: center;
+}
+
+.drawer-footer {
+  padding: var(--space-md);
+  border-top: 1px solid var(--separator);
+  position: fixed;
+  bottom: 0;
+  width: 280px;
+  background-color: var(--background);
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-header {
+  padding: var(--space-md);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--separator);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+}
+
+.content-header h1 {
+  margin-bottom: 0;
+  font-size: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.connection-status {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--success);
+}
+
+.content-body {
+  flex: 1;
+  padding: var(--space-md);
+  background-color: var(--background-secondary);
+}
+
+/* Section Cards */
+.section-carousel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.section-card {
+  position: relative;
+  transition: all 0.3s var(--curve-emphasized);
+}
+
+.section-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.section-menu {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s var(--curve-default);
+}
+
+.section-menu:hover {
+  background-color: var(--background-secondary);
+}
+
+.section-id {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-sm);
+  word-break: break-all;
+}
+
+.section-actions {
+  margin-top: var(--space-md);
+}
+
+.teacher-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.teacher-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background-color: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: var(--space-xl) 0;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-md);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.badge-success {
+  background-color: rgba(52, 199, 89, 0.1);
+  color: var(--success);
+}
+
+.badge-danger {
+  background-color: rgba(255, 59, 48, 0.1);
+  color: var(--error);
+}
+
+.badge-warning {
+  background-color: rgba(255, 149, 0, 0.1);
+  color: var(--warning);
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s var(--curve-emphasized), visibility 0.3s var(--curve-emphasized);
+  will-change: opacity, visibility;
+  padding: var(--space-md);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background-color: var(--background);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(20px);
+  transition: transform 0.3s var(--curve-emphasized);
+  will-change: transform;
+  overflow: hidden;
+}
+
+.modal-overlay.active .modal {
+  transform: translateY(0);
+}
+
+.modal-header {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--separator);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header h2 {
+  margin-bottom: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: background-color 0.2s var(--curve-default);
+}
+
+.close-button:hover {
+  background-color: var(--background-secondary);
+}
+
+.modal-body {
+  padding: var(--space-md);
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: var(--space-md);
+  border-top: 1px solid var(--separator);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+/* QR Code */
+.qr-code-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.qr-code {
+  background-color: white;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-sm);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.loading-overlay.active {
+  display: flex;
+}
+
+.loading-content {
+  text-align: center;
+  max-width: 300px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--background-tertiary);
+  border-top-color: var(--primary);
+  border-radius: var(--radius-full);
+  animation: spin 1s var(--curve-spring) infinite;
+  margin: 0 auto var(--space-md);
+  will-change: transform;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Messages */
+.message {
+  position: fixed;
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  z-index: 1000;
+  animation: slideIn 0.3s var(--curve-emphasized) forwards;
+  will-change: transform, opacity;
+}
+
+.message.animated {
+  animation: slideIn 0.3s var(--curve-emphasized) forwards;
+}
+
+.message i {
+  font-size: 1.25rem;
+}
+
+.error-message {
+  background-color: var(--error);
+  color: white;
+}
+
+.success-message {
+  background-color: var(--success);
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+/* Data Table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--separator);
+}
+
+.data-table td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--separator);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+  .drawer {
+    transform: translateX(-100%);
+    width: 280px;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .drawer.open {
+    transform: translateX(0);
+  }
+  
+  .content-header {
+    justify-content: flex-end;
+  }
+  
+  .content-header h1 {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-card {
+    padding: var(--space-lg);
+  }
+  
+  .section-carousel {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-body {
+    padding: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    font-size: 15px;
+  }
+  
+  .auth-container {
+    padding: var(--space-md);
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .modal-footer .button {
+    width: 100%;
+  }
+}
+
+/* Performance Optimizations */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .drawer,
+  .content-header,
+  .modal-overlay {
+    display: none !important;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  body {
+    background-color: white;
+  }
+}
+</style>
+<body>
+    <div id="app"></div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script>
+        // Secure Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFBb1l7GHsPbCMT9_XI6Lqc88dxaAydTQ",
+            authDomain: "lite-50af2.firebaseapp.com",
+            databaseURL: "https://lite-50af2-default-rtdb.firebaseio.com",
+            projectId: "lite-50af2",
+            storageBucket: "lite-50af2.appspot.com",
+            messagingSenderId: "259126907909",
+            appId: "1:259126907909:web:9bde95a07abf54be42f86c",
+            measurementId: "G-YH5ET7LGS8"
+        };
+
+        // Freeze config to prevent modification
+        Object.freeze(firebaseConfig);
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Enable Firestore persistence for offline support
+        db.enablePersistence().catch(err => {
+            console.error('Firestore persistence failed:', err);
+        });
+
+        // Disable debug logging in production
+        if (window.location.hostname !== "localhost") {
+            firebase.firestore.setLogLevel('silent');
+        }
+
+        /**
+         * Application State Management
+         */
+        class AppState {
+            constructor() {
+                this.currentUser = null;
+                this.userRole = null;
+                this.currentView = 'auth';
+                this.sections = [];
+                this.students = [];
+                this.attendanceSessions = [];
+                this.activeSession = null;
+                this.activeSection = null;
+                this.geolocationPermission = null;
+                this.lastLocationAccess = null;
+                this.locationWatchId = null;
+            }
+
+            reset() {
+                this.currentUser = null;
+                this.userRole = null;
+                this.currentView = 'auth';
+                this.sections = [];
+                this.students = [];
+                this.attendanceSessions = [];
+                this.activeSession = null;
+                this.activeSection = null;
+                this.geolocationPermission = null;
+                this.lastLocationAccess = null;
+
+                if (this.locationWatchId) {
+                    navigator.geolocation.clearWatch(this.locationWatchId);
+                    this.locationWatchId = null;
+                }
+            }
+        }
+
+        const state = new AppState();
+
+        /**
+         * DOM Elements
+         */
+        const elements = {
+            appContainer: document.getElementById('app'),
+            get contentArea() {
+                return document.getElementById('content-area') || null;
+            },
+            get authContent() {
+                return document.getElementById('auth-content') || null;
+            }
+        };
+
+        /**
+         * Utility Functions
+         */
+        class Utils {
+            static showLoading(message = 'Loading...') {
+                let loading = document.getElementById('loading-overlay');
+
+                if (!loading) {
+                    loading = document.createElement('div');
+                    loading.id = 'loading-overlay';
+                    loading.className = 'loading-overlay';
+
+                    loading.innerHTML = `
+                        <div class="loading-content">
+                            <div class="spinner"></div>
+                            <p>${message}</p>
+                        </div>
+                    `;
+
+                    document.body.appendChild(loading);
+                } else {
+                    loading.querySelector('p').textContent = message;
+                    loading.style.display = 'flex';
+                }
+            }
+
+            static hideLoading() {
+                const loading = document.getElementById('loading-overlay');
+                if (loading) loading.style.display = 'none';
+            }
+
+            static showError(message) {
+                this._showMessage(message, 'error', 'exclamation-circle');
+            }
+
+            static showSuccess(message) {
+                this._showMessage(message, 'success', 'check-circle');
+            }
+
+            static _showMessage(message, type, icon) {
+                // Remove existing messages of the same type
+                document.querySelectorAll(`.${type}-message`).forEach(el => el.remove());
+
+                const messageEl = document.createElement('div');
+                messageEl.className = `${type}-message message animated`;
+                messageEl.setAttribute('role', type === 'error' ? 'alert' : 'status');
+                messageEl.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+                messageEl.innerHTML = `
+                    <i class="fas fa-${icon}" aria-hidden="true"></i>
+                    <span>${message}</span>
+                `;
+
+                document.body.appendChild(messageEl);
+
+                setTimeout(() => {
+                    messageEl.style.animation = 'fadeOut 0.3s ease-out forwards';
+                    setTimeout(() => messageEl.remove(), 300);
+                }, 5000);
+            }
+
+            static calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371e3; // Earth radius in meters
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δφ = (lat2 - lat1) * Math.PI / 180;
+                const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                return R * c;
+            }
+
+            static generateSecurityToken(length = 16) {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < length; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            }
+
+            static generateDeviceFingerprint() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = 'top';
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#f60';
+                    ctx.fillRect(125, 1, 62, 20);
+                    ctx.fillStyle = '#069';
+                    ctx.fillText('NearCheck', 2, 15);
+                    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+                    ctx.fillText('NearCheck', 4, 17);
+
+                    return canvas.toDataURL().substring(22);
+                } catch (e) {
+                    return 'unknown';
+                }
+            }
+
+            static async getIPAddress() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    return data.ip;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            static disableDevTools() {
+                // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'F12' ||
+                        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+                        (e.ctrlKey && e.key === 'U')) {
+                        e.preventDefault();
+                        Utils.showError('Developer tools are disabled for security reasons');
+                    }
+                });
+
+                // Prevent right-click
+                document.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    Utils.showError('Right-click is disabled for security reasons');
+                });
+
+                // Override console methods in production
+                if (window.location.hostname !== "localhost") {
+                    console.log = function() {};
+                    console.warn = function() {};
+                    console.error = function() {};
+                }
+            }
+
+            static setupDateInputs(dayId, monthId, yearId) {
+                const dayInput = document.getElementById(dayId);
+                const monthInput = document.getElementById(monthId);
+                const yearInput = document.getElementById(yearId);
+
+                if (!dayInput || !monthInput || !yearInput) return;
+
+                // Auto-tab between fields
+                dayInput.addEventListener('input', function() {
+                    if (this.value.length === 2) monthInput.focus();
+                });
+
+                monthInput.addEventListener('input', function() {
+                    if (this.value.length === 2) yearInput.focus();
+                });
+
+                // Only allow numbers
+                [dayInput, monthInput, yearInput].forEach(input => {
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key < '0' || e.key > '9') e.preventDefault();
+                    });
+
+                    // Prevent paste of non-numeric values
+                    input.addEventListener('paste', function(e) {
+                        const pasteData = e.clipboardData.getData('text');
+                        if (!/^\d+$/.test(pasteData)) e.preventDefault();
+                    });
+                });
+            }
+        }
+
+        /**
+         * Authentication Management
+         */
+        class AuthManager {
+            static async handleSignUp(role) {
+                const fullName = document.getElementById('fullname').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const termsAccepted = document.getElementById('terms-accept').checked;
+
+                if (!fullName || !email || !password || !confirmPassword || !termsAccepted) {
+                    Utils.showError('Please fill all required fields and accept terms');
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    Utils.showError('Passwords do not match');
+                    return;
+                }
+
+                // Enhanced password validation
+                if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}/.test(password)) {
+                    Utils.showError('Password must be at least 8 characters with uppercase, lowercase and numbers');
+                    return;
+                }
+
+                // Additional validation for teachers
+                if (role === 'teacher') {
+                    const day = document.getElementById('birthdate-day').value;
+                    const month = document.getElementById('birthdate-month').value;
+                    const year = document.getElementById('birthdate-year').value;
+
+                    if (!day || !month || !year) {
+                        Utils.showError('Please enter your complete birthdate');
+                        return;
+                    }
+
+                    const birthDate = new Date(`${year}-${month}-${day}`);
+                    if (isNaN(birthDate.getTime())) {
+                        Utils.showError('Please enter a valid date');
+                        return;
+                    }
+
+                    const today = new Date();
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+
+                    if (age < 20) {
+                        Utils.showError('You must be at least 20 years old to register as a teacher');
+                        return;
+                    }
+                }
+
+                // Additional validation for students
+                if (role === 'student' && !document.getElementById('age-confirm').checked) {
+                    Utils.showError('You must confirm you are at least 13 years old');
+                    return;
+                }
+
+                try {
+                    Utils.showLoading('Creating account...');
+
+                    // Create user with email verification
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    // Send verification email
+                    await user.sendEmailVerification({
+                        url: window.location.origin,
+                        handleCodeInApp: true
+                    });
+
+                    // Save additional user data
+                    const userData = {
+                        fullName,
+                        email,
+                        role,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    if (role === 'student') {
+                        const sectionId = document.getElementById('section-id').value.trim();
+                        userData.sections = sectionId ? [sectionId] : [];
+                    }
+
+                    await db.collection('users').doc(user.uid).set(userData);
+                    await user.updateProfile({
+                        displayName: fullName
+                    });
+
+                    Utils.hideLoading();
+
+                    // Show verification notice
+                    ModalManager.showModal({
+                        title: 'Verify Your Email',
+                        body: `
+                            <p>We've sent a verification email to <strong>${email}</strong>.</p>
+                            <p>Please check your inbox and click the verification link to complete your registration.</p>
+                            <p>You can sign in after verifying your email.</p>
+                        `,
+                        buttons: [{
+                            text: 'OK',
+                            class: 'button-primary',
+                            action: 'close'
+                        }]
+                    });
+
+                    // Return to sign in
+                    this.renderSignInForm();
+                } catch (error) {
+                    Utils.hideLoading();
+                    if (error.code === 'auth/email-already-in-use') {
+                        Utils.showError('This email is already registered. Please sign in instead.');
+                    } else if (error.code === 'auth/weak-password') {
+                        Utils.showError('Password should be at least 8 characters with mixed case and numbers');
+                    } else if (error.code === 'auth/invalid-email') {
+                        Utils.showError('Please enter a valid email address');
+                    } else {
+                        Utils.showError(error.message || 'Account creation failed. Please try again.');
+                    }
+                }
+            }
+
+            static async handleSignIn() {
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('remember-me')?.checked;
+
+                if (!email || !password) {
+                    Utils.showError('Please enter both email and password');
+                    return;
+                }
+
+                try {
+                    Utils.showLoading('Signing in...');
+
+                    // Set persistence based on remember me
+                    await auth.setPersistence(rememberMe ?
+                        firebase.auth.Auth.Persistence.LOCAL :
+                        firebase.auth.Auth.Persistence.SESSION);
+
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+
+                    // Check if email is verified
+                    if (!user.emailVerified && user.providerData[0].providerId === 'password') {
+                        await auth.signOut();
+                        throw new Error('Please verify your email before logging in');
+                    }
+
+                    // Update last active timestamp
+                    await db.collection('users').doc(user.uid).update({
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    Utils.hideLoading();
+                } catch (error) {
+                    Utils.hideLoading();
+                    if (error.code === 'auth/user-not-found') {
+                        Utils.showError('No account found with this email. Please sign up.');
+                    } else if (error.code === 'auth/wrong-password') {
+                        Utils.showError('Incorrect password. Please try again.');
+                    } else if (error.code === 'auth/too-many-requests') {
+                        Utils.showError('Too many failed attempts. Please try again later or reset your password.');
+                    } else if (error.code === 'auth/user-disabled') {
+                        Utils.showError('This account has been disabled. Please contact support.');
+                    } else {
+                        Utils.showError(error.message || 'Sign in failed. Please try again.');
+                    }
+                }
+            }
+
+            static renderAuthScreen() {
+                state.currentView = 'auth';
+                elements.appContainer.innerHTML = `
+                    <div class="auth-container">
+                        <div class="auth-card card">
+                            <div class="auth-header">
+                                <div class="auth-logo">NC</div>
+                                <h1>NearCheck Lite</h1>
+                                <p>Secure geolocation-based attendance system</p>
+                            </div>
+                            <div id="auth-content"></div>
+                            <div class="auth-footer">
+                                <p class="text-muted">By continuing, you agree to our Terms and Privacy Policy</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                this.renderRoleSelection();
+            }
+
+            static renderRoleSelection() {
+                elements.authContent.innerHTML = `
+                    <div class="role-selector">
+                        <button class="role-button" id="teacher-role-btn" aria-label="I'm a Teacher">
+                            <span>I'm a Teacher</span>
+                            <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                            <small class="role-description">Create and manage attendance sessions</small>
+                        </button>
+                        <button class="role-button" id="student-role-btn" aria-label="I'm a Student">
+                            <span>I'm a Student</span>
+                            <i class="fas fa-user-graduate" aria-hidden="true"></i>
+                            <small class="role-description">Check in to your classes</small>
+                        </button>
+                    </div>
+                    <div class="auth-footer">
+                        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+                    </div>
+                `;
+
+                document.getElementById('teacher-role-btn').addEventListener('click', () => this.renderSignUpForm('teacher'));
+                document.getElementById('student-role-btn').addEventListener('click', () => this.renderSignUpForm('student'));
+                document.getElementById('sign-in-link').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.renderSignInForm();
+                });
+            }
+
+            static renderSignUpForm(role) {
+                elements.authContent.innerHTML = role === 'teacher' ? `
+                    <form id="signup-form">
+                        <div class="input-group">
+                            <label for="fullname">Full Name</label>
+                            <input type="text" id="fullname" required aria-required="true" maxlength="50">
+                        </div>
+                        <div class="input-group">
+                            <label for="email">Institutional Email</label>
+                            <input type="email" id="email" required aria-required="true" pattern=".+@.+\..+">
+                            <p class="input-hint">Use your school/university email</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required minlength="8" aria-required="true">
+                            <p class="input-hint">Minimum 8 characters with mixed case</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" required minlength="8" aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <label for="birthdate">Birthdate (Must be 20+)</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="birthdate-day" placeholder="DD" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+                                <input type="text" id="birthdate-month" placeholder="MM" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+                                <input type="text" id="birthdate-year" placeholder="YYYY" maxlength="4" style="flex: 2;" pattern="[0-9]*" inputmode="numeric">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="terms-accept" required aria-required="true"> 
+                                I accept the Terms of Service and Privacy Policy
+                            </label>
+                        </div>
+                        <button type="submit" class="button button-primary w-100 mt-4">Create Account</button>
+                    </form>
+                    <div class="auth-footer">
+                        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+                    </div>
+                ` : `
+                    <form id="signup-form">
+                        <div class="input-group">
+                            <label for="fullname">Full Name</label>
+                            <input type="text" id="fullname" required aria-required="true" maxlength="50">
+                        </div>
+                        <div class="input-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required aria-required="true" pattern=".+@.+\..+">
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required minlength="8" aria-required="true">
+                            <p class="input-hint">Minimum 8 characters with mixed case</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="confirm-password">Confirm Password</label>
+                            <input type="password" id="confirm-password" required minlength="8" aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <label for="section-id">Section ID (optional)</label>
+                            <input type="text" id="section-id" placeholder="Provided by your teacher" maxlength="20">
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="age-confirm" required aria-required="true"> 
+                                I confirm I'm 13 years or older
+                            </label>
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="terms-accept" required aria-required="true"> 
+                                I accept the Terms of Service and Privacy Policy
+                            </label>
+                        </div>
+                        <button type="submit" class="button button-primary w-100 mt-4">Continue</button>
+                    </form>
+                    <div class="auth-footer">
+                        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+                    </div>
+                `;
+
+                if (role === 'teacher') {
+                    Utils.setupDateInputs('birthdate-day', 'birthdate-month', 'birthdate-year');
+                } else {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const sectionId = urlParams.get('sectionid');
+                    if (sectionId) document.getElementById('section-id').value = sectionId;
+                }
+
+                document.getElementById('signup-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleSignUp(role);
+                });
+
+                document.getElementById('sign-in-link').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.renderSignInForm();
+                });
+            }
+
+            static renderSignInForm() {
+                elements.authContent.innerHTML = `
+                    <form id="signin-form">
+                        <div class="input-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required aria-required="true">
+                        </div>
+                        <div class="input-group">
+                            <div style="display: flex; justify-content: space-between;">
+                                <label>
+                                    <input type="checkbox" id="remember-me"> Remember me
+                                </label>
+                                <a href="#" id="forgot-password">Forgot password?</a>
+                            </div>
+                        </div>
+                        <button type="submit" class="button button-primary w-100">Sign In</button>
+                    </form>
+                    <div class="auth-footer">
+                        New to NearCheck? <a href="#" id="sign-up-link">Sign up</a>
+                    </div>
+                `;
+
+                document.getElementById('signin-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleSignIn();
+                });
+
+                document.getElementById('sign-up-link').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.renderRoleSelection();
+                });
+
+                document.getElementById('forgot-password').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    ModalManager.showForgotPasswordModal();
+                });
+            }
+        }
+
+        /**
+         * User Data Management
+         */
+        class UserDataManager {
+            static async fetchUserData() {
+                try {
+                    Utils.showLoading('Loading your data...');
+
+                    const userDoc = await db.collection('users').doc(state.currentUser.uid).get();
+                    if (!userDoc.exists) {
+                        throw new Error('User data not found');
+                    }
+
+                    state.userRole = userDoc.data().role;
+
+                    // Security: Validate role
+                    if (!['teacher', 'student'].includes(state.userRole)) {
+                        await auth.signOut();
+                        throw new Error('Invalid user role');
+                    }
+
+                    if (state.userRole === 'teacher') {
+                        await this._fetchTeacherData();
+                    } else if (state.userRole === 'student') {
+                        await this._fetchStudentData(userDoc.data());
+                    }
+
+                    Utils.hideLoading();
+                } catch (error) {
+                    Utils.hideLoading();
+                    Utils.showError('Failed to fetch user data. Please refresh the page to try again.');
+                    console.error('Error fetching user data:', error);
+                    await auth.signOut();
+                }
+            }
+
+            static async _fetchTeacherData() {
+                const sectionsSnapshot = await db.collection('sections')
+                    .where('teacherId', '==', state.currentUser.uid)
+                    .get();
+
+                state.sections = sectionsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Fetch students for each section with security checks
+                const studentsPromises = state.sections.map(async section => {
+                    const studentsSnapshot = await db.collection('users')
+                        .where('sections', 'array-contains', section.id)
+                        .where('role', '==', 'student')
+                        .get();
+                    return studentsSnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                });
+
+                const studentsArrays = await Promise.all(studentsPromises);
+                state.students = studentsArrays.flat();
+            }
+
+            static async _fetchStudentData(userData) {
+                state.sections = [];
+
+                if (userData.sections && userData.sections.length > 0) {
+                    // Security: Limit to 20 sections to prevent abuse
+                    const sectionIds = userData.sections.slice(0, 20);
+                    const sectionsSnapshot = await db.collection('sections')
+                        .where(firebase.firestore.FieldPath.documentId(), 'in', sectionIds)
+                        .get();
+                    state.sections = sectionsSnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                }
+            }
+
+            static async checkForStaleSessions() {
+                if (state.userRole !== 'teacher') return;
+
+                try {
+                    const staleSessions = await db.collection('sessions')
+                        .where('teacherId', '==', state.currentUser.uid)
+                        .where('status', '==', 'active')
+                        .where('startTime', '<', new Date(Date.now() - 24 * 60 * 60 * 1000)) // Older than 24h
+                        .get();
+
+                    if (!staleSessions.empty) {
+                        const batch = db.batch();
+                        staleSessions.forEach(doc => {
+                            batch.update(doc.ref, {
+                                status: 'ended',
+                                endTime: firebase.firestore.FieldValue.serverTimestamp(),
+                                autoEnded: true
+                            });
+                        });
+                        await batch.commit();
+                    }
+                } catch (error) {
+                    console.error('Error cleaning up stale sessions:', error);
+                }
+            }
+        }
+
+        /**
+         * Geolocation Management
+         */
+        class GeolocationManager {
+            static checkPermission() {
+                if (navigator.permissions) {
+                    navigator.permissions.query({
+                            name: 'geolocation'
+                        })
+                        .then(permissionStatus => {
+                            state.geolocationPermission = permissionStatus.state;
+                            permissionStatus.onchange = () => {
+                                state.geolocationPermission = permissionStatus.state;
+                                this.updateUI();
+                            };
+                            this.updateUI();
+                        })
+                        .catch(() => {
+                            state.geolocationPermission = 'prompt';
+                            this.updateUI();
+                        });
+                } else {
+                    state.geolocationPermission = 'prompt';
+                    this.updateUI();
+                }
+            }
+
+            static updateUI() {
+                if (state.currentView === 'permissions' && document.getElementById('geolocation-status')) {
+                    this.renderPermissionsContent();
+                }
+            }
+
+            static async getCurrentPosition() {
+                try {
+                    // Check if permission was previously denied
+                    if (state.geolocationPermission === 'denied') {
+                        throw new Error('Location access was denied. Please enable it in your browser settings to check in.');
+                    }
+
+                    // Show loading if we're prompting for permission
+                    if (state.geolocationPermission === 'prompt') {
+                        Utils.showLoading('Requesting location access...');
+                    }
+
+                    // Request high-accuracy position
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(
+                            resolve,
+                            reject, {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 0
+                            }
+                        );
+                    });
+
+                    // Update permission state
+                    if (state.geolocationPermission === 'prompt') {
+                        state.geolocationPermission = 'granted';
+                        Utils.hideLoading();
+                        this.updateUI();
+                    }
+
+                    // Store last access time
+                    state.lastLocationAccess = new Date();
+
+                    return position;
+                } catch (error) {
+                    if (state.geolocationPermission === 'prompt') {
+                        Utils.hideLoading();
+                    }
+
+                    if (error.code === error.PERMISSION_DENIED) {
+                        state.geolocationPermission = 'denied';
+                        this.updateUI();
+                        throw new Error('Location access was denied. Please enable it in your browser settings to check in.');
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        throw new Error('Location information is unavailable. Please try again or check your connection.');
+                    } else if (error.code === error.TIMEOUT) {
+                        throw new Error('The request to get your location timed out. Please try again.');
+                    } else {
+                        throw new Error('An unknown error occurred while getting your location.');
+                    }
+                }
+            }
+
+            static startLocationTracking() {
+                if (state.locationWatchId) return;
+
+                state.locationWatchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        // Update teacher's location in Firestore
+                        if (state.activeSession) {
+                            db.collection('sessions').doc(state.activeSession.id).update({
+                                location: new firebase.firestore.GeoPoint(
+                                    position.coords.latitude,
+                                    position.coords.longitude
+                                ),
+                                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                    },
+                    (error) => {
+                        console.error('Location tracking error:', error);
+                    }, {
+                        enableHighAccuracy: true,
+                        maximumAge: 30000,
+                        timeout: 10000
+                    }
+                );
+            }
+
+            static stopLocationTracking() {
+                if (state.locationWatchId) {
+                    navigator.geolocation.clearWatch(state.locationWatchId);
+                    state.locationWatchId = null;
+                }
+            }
+        }
+
+        /**
+         * Attendance Session Management
+         */
+        class SessionManager {
+            static async startAttendanceSession(section, duration, autoEnd, requireLocation) {
+                try {
+                    Utils.showLoading('Starting session...');
+
+                    // Get teacher's current location
+                    const position = await GeolocationManager.getCurrentPosition();
+
+                    // Create session in Firestore
+                    const sessionRef = await db.collection('sessions').add({
+                        sectionId: section.id,
+                        teacherId: state.currentUser.uid,
+                        startTime: firebase.firestore.FieldValue.serverTimestamp(),
+                        endTime: null,
+                        duration,
+                        autoEnd,
+                        requireLocation,
+                        location: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                        range: section.checkInRange,
+                        status: 'active',
+                        attendees: [],
+                        securityToken: Utils.generateSecurityToken()
+                    });
+
+                    // Update local state
+                    state.activeSession = {
+                        id: sessionRef.id,
+                        sectionId: section.id,
+                        startTime: new Date(),
+                        duration,
+                        autoEnd,
+                        status: 'active'
+                    };
+
+                    // Start location tracking
+                    GeolocationManager.startLocationTracking();
+
+                    Utils.hideLoading();
+                    Utils.showSuccess('Attendance session started');
+                    DashboardManager.renderDashboardContent();
+
+                    // If auto-end is enabled, set timeout to end session
+                    if (autoEnd) {
+                        setTimeout(() => {
+                            this.endSession(sessionRef.id);
+                        }, duration * 60 * 1000);
+                    }
+
+                    return true;
+                } catch (error) {
+                    Utils.hideLoading();
+                    Utils.showError(error.message || 'Failed to start session');
+                    return false;
+                }
+            }
+
+            static async endSession(sessionId) {
+                try {
+                    await db.collection('sessions').doc(sessionId).update({
+                        status: 'ended',
+                        endTime: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    state.activeSession = null;
+                    DashboardManager.renderDashboardContent();
+                    Utils.showSuccess('Attendance session ended');
+                } catch (error) {
+                    Utils.showError('Failed to end session: ' + error.message);
+                }
+            }
+
+            static async handleStudentCheckIn(section) {
+                try {
+                    Utils.showLoading('Preparing check-in...');
+
+                    // Check if there's an active session for this section
+                    const sessionsSnapshot = await db.collection('sessions')
+                        .where('sectionId', '==', section.id)
+                        .where('status', '==', 'active')
+                        .get();
+
+                    if (sessionsSnapshot.empty) {
+                        throw new Error('No active session found for this section');
+                    }
+
+                    const sessionDoc = sessionsSnapshot.docs[0];
+                    const session = sessionDoc.data();
+                    const sessionId = sessionDoc.id;
+
+                    // Security: Verify session is not older than 24 hours
+                    const sessionStart = session.startTime.toDate();
+                    if (new Date() - sessionStart > 24 * 60 * 60 * 1000) {
+                        throw new Error('This session has expired');
+                    }
+
+                    // Check if student already checked in
+                    if (session.attendees && session.attendees.includes(state.currentUser.uid)) {
+                        throw new Error('You have already checked in to this session');
+                    }
+
+                    // Get student's current location if required
+                    let studentLocation = null;
+                    let distance = 0;
+                    let accuracy = 0;
+
+                    if (session.requireLocation) {
+                        const position = await GeolocationManager.getCurrentPosition();
+                        studentLocation = new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude);
+                        accuracy = position.coords.accuracy;
+
+                        // Calculate distance between teacher and student
+                        distance = Utils.calculateDistance(
+                            session.location.latitude,
+                            session.location.longitude,
+                            studentLocation.latitude,
+                            studentLocation.longitude
+                        );
+
+                        // Verify accuracy is acceptable
+                        if (accuracy > 50) {
+                            throw new Error('Your location accuracy is too low. Please move to an area with better GPS signal.');
+                        }
+
+                        if (distance > session.range) {
+                            throw new Error(`You are too far from the check-in location (${Math.round(distance)}m away, maximum is ${session.range}m)`);
+                        }
+                    }
+
+                    // Security: Verify device consistency
+                    const deviceFingerprint = Utils.generateDeviceFingerprint();
+
+                    // Record attendance
+                    await db.collection('attendance').add({
+                        sessionId,
+                        sectionId: section.id,
+                        studentId: state.currentUser.uid,
+                        studentName: state.currentUser.displayName || 'Student',
+                        checkInTime: firebase.firestore.FieldValue.serverTimestamp(),
+                        location: studentLocation,
+                        distance,
+                        accuracy,
+                        status: 'present',
+                        deviceInfo: navigator.userAgent,
+                        deviceFingerprint,
+                        ipAddress: await Utils.getIPAddress()
+                    });
+
+                    // Add to session attendees
+                    await db.collection('sessions').doc(sessionId).update({
+                        attendees: firebase.firestore.FieldValue.arrayUnion(state.currentUser.uid)
+                    });
+
+                    Utils.hideLoading();
+                    Utils.showSuccess('Checked in successfully!');
+                } catch (error) {
+                    Utils.hideLoading();
+                    Utils.showError(error.message);
+                }
+            }
+        }
+
+        /**
+         * Dashboard Management
+         */
+        class DashboardManager {
+            static renderDashboard() {
+                state.currentView = 'dashboard';
+                elements.appContainer.innerHTML = `
+                    <div class="dashboard">
+                        <div class="drawer">
+                            <div class="drawer-header">
+                                <button class="menu-toggle" id="drawer-toggle" aria-label="Toggle menu">
+                                    <i class="fas fa-bars"></i>
+                                </button>
+                                <h2>NearCheck</h2>
+                            </div>
+                            <div class="drawer-menu">
+                                <a href="#" class="menu-item active" data-view="dashboard" aria-current="page">
+                                    <i class="fas fa-home"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a href="#" class="menu-item" data-view="sections">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span>My Sections</span>
+                                </a>
+                                ${state.userRole === 'teacher' ? `
+                                    <a href="#" class="menu-item" data-view="students">
+                                        <i class="fas fa-users"></i>
+                                        <span>My Students</span>
+                                    </a>
+                                    <a href="#" class="menu-item" data-view="reports">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Attendance Reports</span>
+                                    </a>
+                                ` : ''}
+                                <a href="#" class="menu-item" data-view="permissions">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Security</span>
+                                </a>
+                                <a href="#" class="menu-item" data-view="account">
+                                    <i class="fas fa-user"></i>
+                                    <span>Account</span>
+                                </a>
+                            </div>
+                            <div class="drawer-footer">
+                                <button class="button button-danger" id="sign-out-btn">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Sign Out</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="main-content">
+                            <div class="content-header">
+                                <h1>Dashboard</h1>
+                                <div class="header-actions">
+                                    <button class="menu-toggle" id="mobile-drawer-toggle" aria-label="Toggle menu">
+                                        <i class="fas fa-bars"></i>
+                                    </button>
+                                    <div class="connection-status" id="connection-status" title="Connection status">
+                                        <i class="fas fa-wifi"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="content-body" id="content-area"></div>
+                        </div>
+                    </div>
+                `;
+
+                // Set up event listeners
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const view = item.getAttribute('data-view');
+                        this.setActiveMenuItem(view);
+                        this.renderContent(view);
+                    });
+                });
+
+                document.getElementById('sign-out-btn').addEventListener('click', () => {
+                    GeolocationManager.stopLocationTracking();
+                    auth.signOut();
+                });
+
+                document.getElementById('drawer-toggle').addEventListener('click', this.toggleDrawer);
+                document.getElementById('mobile-drawer-toggle').addEventListener('click', this.toggleDrawer);
+
+                // Initialize responsive drawer state
+                this.updateDrawerState();
+
+                // Initialize connection monitoring
+                this.setupConnectionMonitoring();
+
+                // Render initial content
+                this.renderContent('dashboard');
+            }
+
+            static renderContent(view) {
+                const contentArea = elements.contentArea;
+                if (!contentArea) return;
+
+                // Update page title
+                document.querySelector('.content-header h1').textContent = view.charAt(0).toUpperCase() + view.slice(1).replace(/-/g, ' ');
+
+                switch (view) {
+                    case 'dashboard':
+                        this.renderDashboardContent();
+                        break;
+                    case 'sections':
+                        this.renderSectionsContent();
+                        break;
+                    case 'students':
+                        this.renderStudentsContent();
+                        break;
+                    case 'reports':
+                        this.renderReportsContent();
+                        break;
+                    case 'permissions':
+                        this.renderPermissionsContent();
+                        break;
+                    case 'account':
+                        this.renderAccountContent();
+                        break;
+                    default:
+                        this.renderDashboardContent();
+                }
+            }
+
+            static renderDashboardContent() {
+                const now = new Date();
+                const hours = now.getHours();
+                let greeting = 'Good morning';
+
+                if (hours >= 12 && hours < 17) greeting = 'Good afternoon';
+                else if (hours >= 17 || hours < 5) greeting = 'Good evening';
+
+                const firstName = state.currentUser.displayName ? state.currentUser.displayName.split(' ')[0] : 'User';
+
+                elements.contentArea.innerHTML = `
+                    <div class="greeting">
+                        <h2>${greeting}, ${firstName}</h2>
+                        <p>${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                    
+                    ${state.userRole === 'teacher' ? `
+                        <div class="header-actions" style="margin-bottom: 24px;">
+                            <button class="button button-primary" id="create-section-btn">
+                                <i class="fas fa-plus"></i>
+                                <span>Create Section</span>
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    ${state.sections.length > 0 ? `
+                        <div class="section-carousel">
+                            ${state.sections.map(section => `
+                                <div class="section-card card" data-section-id="${section.id}">
+                                    <div class="section-menu" aria-label="Section options">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </div>
+                                    <h3>${section.name}</h3>
+                                    <p>${section.subject}</p>
+                                    <span class="section-id">${section.id}</span>
+                                    ${state.userRole === 'teacher' ? `
+                                        <p>${section.students ? section.students.length : 0} students</p>
+                                        <div class="section-actions">
+                                            <button class="button button-primary start-session-btn" aria-label="Start attendance session for ${section.name}">
+                                                Start Session
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <div class="teacher-info">
+                                            <div class="teacher-avatar">${section.teacherName ? section.teacherName.charAt(0) : 'T'}</div>
+                                            <span>${section.teacherName || 'Teacher'}</span>
+                                        </div>
+                                        <div class="section-actions">
+                                            <button class="button button-primary checkin-btn" aria-label="Check in to ${section.name}">
+                                                Check In
+                                            </button>
+                                        </div>
+                                    `}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="empty-state">
+                            <i class="fas fa-layer-group"></i>
+                            <h3>No Sections Found</h3>
+                            <p>${state.userRole === 'teacher' ? 'Create your first section to get started with attendance tracking' : 'Join a section using an invitation link from your teacher to begin checking in'}</p>
+                            ${state.userRole === 'teacher' ? `
+                                <button class="button button-primary mt-4" id="create-section-btn-2">
+                                    Create Section
+                                </button>
+                            ` : `
+                                <button class="button button-primary mt-4" id="join-section-btn">
+                                    Join Section
+                                </button>
+                            `}
+                        </div>
+                    `}
+                `;
+
+                // Set up event listeners
+                if (state.userRole === 'teacher') {
+                    const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
+                    if (createSectionBtn) {
+                        createSectionBtn.addEventListener('click', () => ModalManager.showCreateSectionModal());
+                    }
+
+                    document.querySelectorAll('.start-session-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const sectionCard = e.target.closest('.section-card');
+                            const sectionId = sectionCard.getAttribute('data-section-id');
+                            const section = state.sections.find(s => s.id === sectionId);
+                            ModalManager.showStartSessionModal(section);
+                        });
+                    });
+                } else {
+                    const joinSectionBtn = document.getElementById('join-section-btn');
+                    if (joinSectionBtn) {
+                        joinSectionBtn.addEventListener('click', () => this.renderSectionsContent());
+                    }
+
+                    document.querySelectorAll('.checkin-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const sectionCard = e.target.closest('.section-card');
+                            const sectionId = sectionCard.getAttribute('data-section-id');
+                            const section = state.sections.find(s => s.id === sectionId);
+                            SessionManager.handleStudentCheckIn(section);
+                        });
+                    });
+                }
+            }
+
+            static renderSectionsContent() {
+                elements.contentArea.innerHTML = `
+                    ${state.userRole === 'teacher' ? `
+                        <div class="header-actions" style="margin-bottom: 24px;">
+                            <button class="button button-primary" id="create-section-btn">
+                                <i class="fas fa-plus"></i>
+                                <span>Create Section</span>
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    ${state.sections.length > 0 ? `
+                        <div class="section-list">
+                            ${state.sections.map(section => `
+                                <div class="card mb-4" data-section-id="${section.id}">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h3>${section.name}</h3>
+                                        <div class="section-menu" aria-label="Section options">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted">${section.subject}</p>
+                                    <p><strong>Schedule:</strong> ${section.schedule}</p>
+                                    <p><strong>Section ID:</strong> <span class="section-id">${section.id}</span></p>
+                                    
+                                    ${state.userRole === 'teacher' ? `
+                                        <div class="section-actions mt-4" style="display: flex; gap: 8px;">
+                                            <button class="button button-primary invite-students-btn">
+                                                <i class="fas fa-user-plus"></i>
+                                                <span>Invite Students</span>
+                                            </button>
+                                            <button class="button button-secondary manage-students-btn">
+                                                <i class="fas fa-users-cog"></i>
+                                                <span>Manage Students</span>
+                                            </button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="empty-state">
+                            <i class="fas fa-layer-group"></i>
+                            <h3>No Sections Found</h3>
+                            <p>${state.userRole === 'teacher' ? 'Create your first section to start managing attendance' : 'Join a section to begin checking in to classes'}</p>
+                            ${state.userRole === 'teacher' ? `
+                                <button class="button button-primary mt-4" id="create-section-btn-2">
+                                    Create Section
+                                </button>
+                            ` : `
+                                <div class="input-group mt-4">
+                                    <input type="text" id="join-section-input" placeholder="Enter Section ID">
+                                    <button class="button button-primary w-100" id="join-section-btn">
+                                        Join Section
+                                    </button>
+                                </div>
+                                <p class="text-center text-muted mt-2">Get the section ID from your teacher</p>
+                            `}
+                        </div>
+                    `}
+                `;
+
+                // Set up event listeners
+                if (state.userRole === 'teacher') {
+                    const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
+                    if (createSectionBtn) {
+                        createSectionBtn.addEventListener('click', () => ModalManager.showCreateSectionModal());
+                    }
+
+                    document.querySelectorAll('.invite-students-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const sectionCard = e.target.closest('.card');
+                            const sectionId = sectionCard.getAttribute('data-section-id');
+                            const section = state.sections.find(s => s.id === sectionId);
+                            ModalManager.showInviteStudentsModal(section);
+                        });
+                    });
+
+                    document.querySelectorAll('.manage-students-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const sectionCard = e.target.closest('.card');
+                            const sectionId = sectionCard.getAttribute('data-section-id');
+                            const section = state.sections.find(s => s.id === sectionId);
+                            ModalManager.showManageStudentsModal(section);
+                        });
+                    });
+                } else {
+                    const joinSectionBtn = document.getElementById('join-section-btn');
+                    if (joinSectionBtn) {
+                        joinSectionBtn.addEventListener('click', async () => {
+                            const sectionId = document.getElementById('join-section-input').value.trim();
+                            if (!sectionId) {
+                                Utils.showError('Please enter a section ID');
+                                return;
+                            }
+
+                            try {
+                                Utils.showLoading('Joining section...');
+
+                                // Verify section exists
+                                const sectionDoc = await db.collection('sections').doc(sectionId).get();
+                                if (!sectionDoc.exists) {
+                                    throw new Error('Section not found. Please check the ID and try again.');
+                                }
+
+                                // Add section to user's sections array
+                                await db.collection('users').doc(state.currentUser.uid).update({
+                                    sections: firebase.firestore.FieldValue.arrayUnion(sectionId)
+                                });
+
+                                // Refresh data
+                                await UserDataManager.fetchUserData();
+                                Utils.hideLoading();
+                                this.renderContent('sections');
+                            } catch (error) {
+                                Utils.hideLoading();
+                                Utils.showError(error.message);
+                            }
+                        });
+                    }
+                }
+            }
+
+            static renderStudentsContent() {
+                if (state.userRole !== 'teacher') return;
+
+                elements.contentArea.innerHTML = `
+                    ${state.students.length > 0 ? `
+                        <div class="students-list">
+                            ${state.students.map(student => `
+                                <div class="card mb-4" data-student-id="${student.id}">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h3>${student.fullName}</h3>
+                                        <div class="student-menu" aria-label="Student options">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted">${student.email}</p>
+                                    <p>Sections: ${student.sections ? student.sections.length : 0}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <h3>No Students Found</h3>
+                            <p>Students will appear here once they join your sections. Invite students to your sections to get started.</p>
+                            <button class="button button-primary mt-4" id="invite-students-btn">
+                                Invite Students
+                            </button>
+                        </div>
+                    `}
+                `;
+
+                const inviteStudentsBtn = document.getElementById('invite-students-btn');
+                if (inviteStudentsBtn) {
+                    inviteStudentsBtn.addEventListener('click', () => {
+                        if (state.sections.length > 0) {
+                            this.renderContent('sections');
+                        } else {
+                            ModalManager.showCreateSectionModal();
+                        }
+                    });
+                }
+            }
+
+            static renderReportsContent() {
+                if (state.userRole !== 'teacher') return;
+
+                elements.contentArea.innerHTML = `
+                    <div class="header-actions" style="margin-bottom: 24px;">
+                        <button class="button button-primary" id="export-reports-btn">
+                            <i class="fas fa-file-export"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                    
+                    <div class="reports-filters mb-4">
+                        <div style="display: flex; gap: 12px;">
+                            <select class="input-group" id="report-section-filter">
+                                <option value="">All Sections</option>
+                                ${state.sections.map(section => `
+                                    <option value="${section.id}">${section.name}</option>
+                                `).join('')}
+                            </select>
+                            <select class="input-group" id="report-time-filter">
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="reports-summary card mb-4">
+                        <h3>Summary</h3>
+                        <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+                            <div class="summary-item">
+                                <p>Total Students</p>
+                                <h2>${state.students.length}</h2>
+                            </div>
+                            <div class="summary-item">
+                                <p>Average Attendance</p>
+                                <h2>85%</h2>
+                            </div>
+                            <div class="summary-item">
+                                <p>Sessions</p>
+                                <h2>12</h2>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="reports-chart card" style="padding: 20px; height: 300px;">
+                        <h3>Attendance Trend</h3>
+                        <div style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                            <p>Chart will be displayed here</p>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('export-reports-btn').addEventListener('click', () => {
+                    ModalManager.showExportReportsModal();
+                });
+
+                // Show/hide custom date range inputs
+                document.getElementById('report-time-filter').addEventListener('change', (e) => {
+                    const customRangeGroup = document.getElementById('custom-range-group');
+                    if (e.target.value === 'custom' && customRangeGroup) {
+                        customRangeGroup.style.display = 'block';
+                    } else if (customRangeGroup) {
+                        customRangeGroup.style.display = 'none';
+                    }
+                });
+            }
+
+            static renderPermissionsContent() {
+                elements.contentArea.innerHTML = `
+                    <div class="card mb-4">
+                        <h3 class="mb-4">Geolocation Access</h3>
+                        <p>NearCheck Lite requires geolocation access to verify your location when checking in to classes.</p>
+                        
+                        <div class="permission-status mt-4">
+                            <h4>Current Status:</h4>
+                            <div id="geolocation-status" class="mt-2">
+                                ${state.geolocationPermission === 'granted' ? `
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-check-circle"></i> Granted
+                                    </span>
+                                    <p class="text-muted mt-2">You've granted location access. You can check in to classes.</p>
+                                ` : state.geolocationPermission === 'denied' ? `
+                                    <span class="badge badge-danger">
+                                        <i class="fas fa-times-circle"></i> Denied
+                                    </span>
+                                    <p class="text-muted mt-2">You've denied location access. You won't be able to check in to classes.</p>
+                                    <button class="button button-primary mt-2" id="open-settings-btn">
+                                        Open Browser Settings
+                                    </button>
+                                ` : `
+                                    <span class="badge badge-warning">
+                                        <i class="fas fa-question-circle"></i> Not Determined
+                                    </span>
+                                    <p class="text-muted mt-2">Location access hasn't been requested yet. It will be requested when you try to check in.</p>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="mb-4">How Location Works</h3>
+                        <p>When you check in to a class, NearCheck Lite will:</p>
+                        <ul style="margin-top: 8px; padding-left: 20px;">
+                            <li>Request permission to access your location (if not already granted)</li>
+                            <li>Compare your location with the teacher's location</li>
+                            <li>Verify you're within the allowed distance (typically 50-100 meters)</li>
+                            <li>Record your attendance with timestamp and location data</li>
+                        </ul>
+                        <p class="mt-4">Your location data is only used for attendance verification and is not stored permanently.</p>
+                    </div>
+                `;
+
+                const openSettingsBtn = document.getElementById('open-settings-btn');
+                if (openSettingsBtn) {
+                    openSettingsBtn.addEventListener('click', () => {
+                        ModalManager.showModal({
+                            title: 'Change Location Settings',
+                            body: `
+                                <p>To enable location access for NearCheck Lite:</p>
+                                <ol style="margin-top: 8px; padding-left: 20px;">
+                                    <li>Open your browser settings</li>
+                                    <li>Navigate to Site Settings or Permissions</li>
+                                    <li>Find NearCheck Lite in the list of sites</li>
+                                    <li>Change the Location permission to "Allow"</li>
+                                    <li>Refresh this page</li>
+                                </ol>
+                                <p class="mt-4">The exact steps vary depending on your browser and device.</p>
+                            `,
+                            buttons: [{
+                                text: 'OK',
+                                class: 'button-primary',
+                                action: 'close'
+                            }]
+                        });
+                    });
+                }
+            }
+
+            static renderAccountContent() {
+                elements.contentArea.innerHTML = `
+                    <div class="card mb-4">
+                        <h3 class="mb-4">Personal Information</h3>
+                        <div class="input-group">
+                            <label for="account-name">Full Name</label>
+                            <input type="text" id="account-name" value="${state.currentUser.displayName || ''}">
+                        </div>
+                        <div class="input-group">
+                            <label for="account-email">Email</label>
+                            <input type="email" id="account-email" value="${state.currentUser.email}" disabled>
+                        </div>
+                        <button class="button button-primary" id="save-account-btn">Save Changes</button>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <h3 class="mb-4">Security</h3>
+                        <button class="button button-secondary" id="change-password-btn">Change Password</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="mb-4">Danger Zone</h3>
+                        <p class="mb-4">Deleting your account will permanently remove all your data from our systems.</p>
+                        <button class="button button-danger" id="delete-account-btn">Delete Account</button>
+                    </div>
+                `;
+
+                document.getElementById('save-account-btn').addEventListener('click', async () => {
+                    const newName = document.getElementById('account-name').value.trim();
+
+                    if (!newName) {
+                        Utils.showError('Please enter your name');
+                        return;
+                    }
+
+                    try {
+                        Utils.showLoading('Updating account...');
+                        await state.currentUser.updateProfile({
+                            displayName: newName
+                        });
+
+                        await db.collection('users').doc(state.currentUser.uid).update({
+                            fullName: newName
+                        });
+
+                        Utils.hideLoading();
+                        Utils.showSuccess('Account updated successfully');
+                    } catch (error) {
+                        Utils.hideLoading();
+                        Utils.showError(error.message || 'Failed to update account');
+                    }
+                });
+
+                document.getElementById('change-password-btn').addEventListener('click', () => {
+                    ModalManager.showChangePasswordModal();
+                });
+
+                document.getElementById('delete-account-btn').addEventListener('click', () => {
+                    ModalManager.showDeleteAccountModal();
+                });
+            }
+
+            static setActiveMenuItem(view) {
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('active');
+                    item.removeAttribute('aria-current');
+                    if (item.getAttribute('data-view') === view) {
+                        item.classList.add('active');
+                        item.setAttribute('aria-current', 'page');
+                    }
+                });
+            }
+
+            static toggleDrawer() {
+                document.querySelector('.drawer').classList.toggle('open');
+            }
+
+            static updateDrawerState() {
+                const drawer = document.querySelector('.drawer');
+                if (window.innerWidth >= 992) {
+                    drawer.classList.add('open');
+                } else {
+                    drawer.classList.remove('open');
+                }
+            }
+
+            static setupConnectionMonitoring() {
+                const connectionStatus = document.getElementById('connection-status');
+                if (!connectionStatus) return;
+
+                const updateConnectionStatus = (isOnline) => {
+                    connectionStatus.innerHTML = `<i class="fas fa-wifi${isOnline ? '' : '-slash'}"></i>`;
+                    connectionStatus.title = isOnline ? 'Online' : 'Offline - Working in limited mode';
+                    connectionStatus.style.color = isOnline ? 'var(--success)' : 'var(--error)';
+                };
+
+                window.addEventListener('online', () => updateConnectionStatus(true));
+                window.addEventListener('offline', () => updateConnectionStatus(false));
+
+                // Initial state
+                updateConnectionStatus(navigator.onLine);
+            }
+        }
+
+        /**
+         * Modal Management
+         */
+        class ModalManager {
+            static showModal(options) {
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal">
+                        <div class="modal-header">
+                            <h2>${options.title}</h2>
+                            <button class="close-button" aria-label="Close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            ${options.body}
+                        </div>
+                        <div class="modal-footer">
+                            ${options.buttons.map(btn => `
+                                <button class="button ${btn.class}" id="${btn.text.toLowerCase().replace(' ', '-')}-btn">
+                                    ${btn.text}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+
+                setTimeout(() => {
+                    modal.classList.add('active');
+                }, 10);
+
+                // Set up event listeners
+                const closeModal = () => {
+                    modal.classList.remove('active');
+                    setTimeout(() => {
+                        modal.remove();
+                    }, 300);
+                };
+
+                modal.querySelector('.close-button').addEventListener('click', closeModal);
+
+                options.buttons.forEach(btn => {
+                    const button = modal.querySelector(`#${btn.text.toLowerCase().replace(' ', '-')}-btn`);
+                    if (btn.action === 'close') {
+                        button.addEventListener('click', closeModal);
+                    } else {
+                        button.addEventListener('click', async () => {
+                            const result = await btn.action();
+                            if (result) {
+                                closeModal();
+                            }
+                        });
+                    }
+                });
+
+                // Call onRender callback if provided
+                if (options.onRender) {
+                    options.onRender(modal);
+                }
+
+                // Close modal when clicking outside
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+
+            static showCreateSectionModal() {
+                this.showModal({
+                    title: 'Create New Section',
+                    body: `
+                        <form id="create-section-form">
+                            <div class="input-group">
+                                <label for="section-name">Section Name</label>
+                                <input type="text" id="section-name" required placeholder="e.g. Computer Science 101">
+                            </div>
+                            <div class="input-group">
+                                <label for="section-subject">Subject</label>
+                                <input type="text" id="section-subject" required placeholder="e.g. Computer Science">
+                            </div>
+                            <div class="input-group">
+                                <label for="section-schedule">Schedule</label>
+                                <input type="text" id="section-schedule" placeholder="e.g. Mon, Wed, Fri 9:00-10:30 AM" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="section-range">Check-in Range (meters)</label>
+                                <input type="number" id="section-range" value="50" min="5" max="150" required>
+                                <p class="input-hint">Students must be within this distance to check in</p>
+                            </div>
+                        </form>
+                    `,
+                    buttons: [{
+                            text: 'Cancel',
+                            class: 'button-secondary',
+                            action: 'close'
+                        },
+                        {
+                            text: 'Create Section',
+                            class: 'button-primary',
+                            action: async () => {
+                                const name = document.getElementById('section-name').value.trim();
+                                const subject = document.getElementById('section-subject').value.trim();
+                                const schedule = document.getElementById('section-schedule').value.trim();
+                                const range = parseInt(document.getElementById('section-range').value);
+
+                                if (!name || !subject || !schedule || !range) {
+                                    Utils.showError('Please fill all fields');
+                                    return false;
+                                }
+
+                                try {
+                                    Utils.showLoading('Creating section...');
+
+                                    // Get teacher's current location
+                                    const position = await GeolocationManager.getCurrentPosition();
+
+                                    // Create section in Firestore
+                                    const sectionRef = await db.collection('sections').add({
+                                        name,
+                                        subject,
+                                        schedule,
+                                        checkInRange: range,
+                                        teacherId: state.currentUser.uid,
+                                        teacherName: state.currentUser.displayName || 'Teacher',
+                                        teacherLocation: new firebase.firestore.GeoPoint(position.coords.latitude, position.coords.longitude),
+                                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                        students: []
+                                    });
+
+                                    // Update local state
+                                    state.sections.push({
+                                        id: sectionRef.id,
+                                        name,
+                                        subject,
+                                        schedule,
+                                        checkInRange: range,
+                                        teacherId: state.currentUser.uid
+                                    });
+
+                                    Utils.hideLoading();
+                                    Utils.showSuccess('Section created successfully');
+                                    DashboardManager.renderContent('sections');
+                                    return true;
+                                } catch (error) {
+                                    Utils.hideLoading();
+                                    Utils.showError(error.message || 'Failed to create section');
+                                    return false;
+                                }
+                            }
+                        }
+                    ]
+                });
+            }
+
+            static showStartSessionModal(section) {
+                this.showModal({
+                    title: `Start Attendance Session - ${section.name}`,
+                    body: `
+                        <p>You're about to start an attendance session for <strong>${section.name}</strong>.</p>
+                        
+                        <div class="input-group mt-4">
+                            <label for="session-duration">Session Duration (minutes)</label>
+                            <input type="number" id="session-duration" value="15" min="1" max="120">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="auto-end-checkbox" checked> Auto-end session after duration
+                            </label>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" id="require-location-checkbox" checked> Require student location
+                            </label>
+                        </div>
+                    `,
+                    buttons: [{
+                            text: 'Cancel',
+                            class: 'button-secondary',
+                            action: 'close'
+                        },
+                        {
+                            text: 'Start Session',
+                            class: 'button-primary',
+                            action: async () => {
+                                const duration = parseInt(document.getElementById('session-duration').value);
+                                const autoEnd = document.getElementById('auto-end-checkbox').checked;
+                                const requireLocation = document.getElementById('require-location-checkbox').checked;
+
+                                if (!duration || duration < 1) {
+                                    Utils.showError('Please enter a valid duration');
+                                    return false;
+                                }
+
+                                return await SessionManager.startAttendanceSession(section, duration, autoEnd, requireLocation);
+                            }
+                        }
+                    ]
+                });
+            }
+
+            static showInviteStudentsModal(section) {
+                const inviteLink = `${window.location.origin}${window.location.pathname}?sectionid=${section.id}`;
+                const qr = qrcode(0, 'L');
+                qr.addData(inviteLink);
+                qr.make();
+                const qrSvg = qr.createSvgTag(4);
+
+                this.showModal({
+                    title: `Invite Students - ${section.name}`,
+                    body: `
+                        <div class="qr-code-container">
+                            <div class="qr-code" id="qr-code">${qrSvg}</div>
+                            <p>Scan this QR code to join</p>
+                        </div>
+                        
+                        <div class="input-group mt-4">
+                            <label for="invite-link">Invitation Link</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="invite-link" value="${inviteLink}" readonly>
+                                <button class="button button-secondary" id="copy-link-btn" aria-label="Copy invitation link">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="section-id">Section ID</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="section-id" value="${section.id}" readonly>
+                                <button class="button button-secondary" id="copy-id-btn" aria-label="Copy section ID">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `,
+                    buttons: [{
+                        text: 'Done',
+                        class: 'button-primary',
+                        action: 'close'
+                    }],
+                    onRender: (modal) => {
+                        modal.querySelector('#copy-link-btn').addEventListener('click', () => {
+                            const linkInput = document.getElementById('invite-link');
+                            linkInput.select();
+                            document.execCommand('copy');
+                            Utils.showSuccess('Link copied to clipboard');
+                        });
+
+                        modal.querySelector('#copy-id-btn').addEventListener('click', () => {
+                            const idInput = document.getElementById('section-id');
+                            idInput.select();
+                            document.execCommand('copy');
+                            Utils.showSuccess('Section ID copied to clipboard');
+                        });
+                    }
+                });
+            }
+
+            static showManageStudentsModal(section) {
+                this.showModal({
+                    title: `Manage Students - ${section.name}`,
+                    body: `
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-list">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; padding: 16px;">Loading students...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `,
+                    buttons: [{
+                        text: 'Done',
+                        class: 'button-primary',
+                        action: 'close'
+                    }],
+                    onRender: async (modal) => {
+                        const studentsList = modal.querySelector('#students-list');
+
+                        try {
+                            const querySnapshot = await db.collection('users')
+                                .where('sections', 'array-contains', section.id)
+                                .where('role', '==', 'student')
+                                .get();
+
+                            studentsList.innerHTML = '';
+
+                            if (querySnapshot.empty) {
+                                studentsList.innerHTML = `
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
+                                    </tr>
+                                `;
+                                return;
+                            }
+
+                            querySnapshot.forEach((doc) => {
+                                const student = doc.data();
+                                studentsList.innerHTML += `
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center" style="gap: 8px;">
+                                                <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center;">
+                                                    ${student.fullName ? student.fullName.charAt(0) : 'S'}
+                                                </div>
+                                                <div>
+                                                    <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
+                                                    <div style="font-size: 12px; color: var(--text-tertiary);">${student.email}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-success">Active</span>
+                                        </td>
+                                        <td>
+                                            <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
+                                                Remove
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+
+                            // Set up event listeners for remove buttons
+                            modal.querySelectorAll('button[data-student-id]').forEach(btn => {
+                                btn.addEventListener('click', async (e) => {
+                                    const studentId = e.target.getAttribute('data-student-id');
+                                    if (confirm('Are you sure you want to remove this student from the section?')) {
+                                        try {
+                                            Utils.showLoading('Removing student...');
+
+                                            // Remove section from student's sections array
+                                            await db.collection('users').doc(studentId).update({
+                                                sections: firebase.firestore.FieldValue.arrayRemove(section.id)
+                                            });
+
+                                            // Refresh the list
+                                            this.showManageStudentsModal(section);
+                                            Utils.hideLoading();
+                                            Utils.showSuccess('Student removed from section');
+                                        } catch (error) {
+                                            Utils.hideLoading();
+                                            Utils.showError('Failed to remove student: ' + error.message);
+                                        }
+                                    }
+                                });
+                            });
+                        } catch (error) {
+                            studentsList.innerHTML = `
+                                <tr>
+                                    <td colspan="3" style="text-align: center; padding: 16px; color: var(--error);">Error loading students: ${error.message}</td>
+                                </tr>
+                            `;
+                        }
+                    }
+                });
+            }
+
+            static showExportReportsModal() {
+                this.showModal({
+                    title: 'Export Attendance Data',
+                    body: `
+                        <div class="input-group">
+                            <label for="export-format">Format</label>
+                            <select id="export-format">
+                                <option value="excel">Excel (.xlsx)</option>
+                                <option value="csv">CSV (.csv)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="export-time-range">Time Range</label>
+                            <select id="export-time-range">
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group" id="custom-range-group" style="display: none;">
+                            <label for="export-start-date">Start Date</label>
+                            <input type="date" id="export-start-date">
+                            
+                            <label for="export-end-date" style="margin-top: 8px;">End Date</label>
+                            <input type="date" id="export-end-date">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="export-section">Section</label>
+                            <select id="export-section">
+                                <option value="all">All Sections</option>
+                                ${state.sections.map(section => `
+                                    <option value="${section.id}">${section.name}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    `,
+                    buttons: [{
+                            text: 'Cancel',
+                            class: 'button-secondary',
+                            action: 'close'
+                        },
+                        {
+                            text: 'Export Data',
+                            class: 'button-primary',
+                            action: () => {
+                                Utils.showSuccess('Export request received. Data will be downloaded shortly.');
+                                return true;
+                            }
+                        }
+                    ],
+                    onRender: (modal) => {
+                        modal.querySelector('#export-time-range').addEventListener('change', (e) => {
+                            const customRangeGroup = modal.querySelector('#custom-range-group');
+                            if (e.target.value === 'custom') {
+                                customRangeGroup.style.display = 'block';
+                            } else {
+                                customRangeGroup.style.display = 'none';
+                            }
+                        });
+                    }
+                });
+            }
+
+            static showChangePasswordModal() {
+                this.showModal({
+                    title: 'Change Password',
+                    body: `
+                        <div class="input-group">
+                            <label for="current-password">Current Password</label>
+                            <input type="password" id="current-password" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="new-password">New Password</label>
+                            <input type="password" id="new-password" required minlength="6">
+                            <p class="input-hint">Minimum 6 characters</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="confirm-new-password">Confirm New Password</label>
+                            <input type="password" id="confirm-new-password" required minlength="6">
+                        </div>
+                    `,
+                    buttons: [{
+                            text: 'Cancel',
+                            class: 'button-secondary',
+                            action: 'close'
+                        },
+                        {
+                            text: 'Change Password',
+                            class: 'button-primary',
+                            action: async () => {
+                                const currentPassword = document.getElementById('current-password').value;
+                                const newPassword = document.getElementById('new-password').value;
+                                const confirmNewPassword = document.getElementById('confirm-new-password').value;
+
+                                if (!currentPassword || !newPassword || !confirmNewPassword) {
+                                    Utils.showError('Please fill all fields');
+                                    return false;
+                                }
+
+                                if (newPassword !== confirmNewPassword) {
+                                    Utils.showError('New passwords do not match');
+                                    return false;
+                                }
+
+                                if (newPassword.length < 6) {
+                                    Utils.showError('Password must be at least 6 characters');
+                                    return false;
+                                }
+
+                                try {
+                                    Utils.showLoading('Changing password...');
+
+                                    // Reauthenticate user
+                                    const credential = firebase.auth.EmailAuthProvider.credential(
+                                        state.currentUser.email,
+                                        currentPassword
+                                    );
+
+                                    await state.currentUser.reauthenticateWithCredential(credential);
+
+                                    // Update password
+                                    await state.currentUser.updatePassword(newPassword);
+
+                                    Utils.hideLoading();
+                                    Utils.showSuccess('Password changed successfully');
+                                    return true;
+                                } catch (error) {
+                                    Utils.hideLoading();
+                                    if (error.code === 'auth/wrong-password') {
+                                        Utils.showError('Current password is incorrect');
+                                    } else {
+                                        Utils.showError(error.message || 'Failed to change password');
+                                    }
+                                    return false;
+                                }
+                            }
+                        }
+                    ]
+                });
+            }
+
+            static showDeleteAccountModal() {
+                this.showModal({
+                    title: 'Delete Account',
+                    body: `
+                        <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                        <p class="mb-4">All your data will be permanently removed from our systems.</p>
+                        
+                        <div class="input-group">
+                            <label for="delete-password">Enter your password to confirm</label>
+                            <input type="password" id="delete-password" required>
+                        </div>
+                    `,
+                    buttons: [{
+                            text: 'Cancel',
+                            class: 'button-secondary',
+                            action: 'close'
+                        },
+                        {
+                            text: 'Delete Account',
+                            class: 'button-danger',
+                            action: async () => {
+                                const password = document.getElementById('delete-password').value;
+
+                                if (!password) {
+                                    Utils.showError('Please enter your password');
+                                    return false;
+                                }
+
+                                try {
+                                    Utils.showLoading('Deleting account...');
+
+                                    // Reauthenticate user
+                                    const credential = firebase.auth.EmailAuthProvider.credential(
+                                        state.currentUser.email,
+                                        password
+                                    );
+
+                                    await state.currentUser.reauthenticateWithCredential(credential);
+
+                                    // Delete user from Firebase Auth
+                                    await state.currentUser.delete();
+
+                                    // Delete user data from Firestore
+                                    await db.collection('users').doc(state.currentUser.uid).delete();
+
+                                    Utils.hideLoading();
+                                    Utils.showSuccess('Account deleted successfully');
+
+                                    // User will be automatically signed out by the auth state listener
+                                    return true;
+                                } catch (error) {
+                                    Utils.hideLoading();
+                                    if (error.code === 'auth/wrong-password') {
+                                        Utils.showError('Incorrect password');
+                                    } else {
+                                        Utils.showError(error.message || 'Failed to delete account');
+                                    }
+                                    return false;
+                                }
+                            }
+                        }
+                    ]
+                });
+            }
+
+            static showForgotPasswordModal() {
+                this.showModal({
+                    title: 'Reset Password',
+                    body: `
+                        <p>Enter your email address and we'll send you a link to reset your password.</p>
+                        
+                        <div class="input-group mt-4">
+                            <label for="reset-email">Email</label>
+                            <input type="email" id="reset-email" required>
+                        </div>
+                    `,
+                    buttons: [{
+                            text: 'Cancel',
+                            class: 'button-secondary',
+                            action: 'close'
+                        },
+                        {
+                            text: 'Send Reset Link',
+                            class: 'button-primary',
+                            action: async () => {
+                                const email = document.getElementById('reset-email').value.trim();
+
+                                if (!email) {
+                                    Utils.showError('Please enter your email address');
+                                    return false;
+                                }
+
+                                try {
+                                    Utils.showLoading('Sending reset link...');
+                                    await auth.sendPasswordResetEmail(email);
+                                    Utils.hideLoading();
+                                    Utils.showSuccess('Password reset link sent to your email');
+                                    return true;
+                                } catch (error) {
+                                    Utils.hideLoading();
+                                    if (error.code === 'auth/user-not-found') {
+                                        Utils.showError('No account found with this email');
+                                    } else {
+                                        Utils.showError(error.message || 'Failed to send reset link');
+                                    }
+                                    return false;
+                                }
+                            }
+                        }
+                    ]
+                });
+            }
+        }
+
+        /**
+         * Application Initialization
+         */
+        class AppInitializer {
+            static init() {
+                // Verify we're not in an iframe (clickjacking protection)
+                if (window.self !== window.top) {
+                    document.body.innerHTML = `
+                        <div style="padding: 20px; text-align: center;">
+                            <h1>Security Alert</h1>
+                            <p>This application cannot be embedded in frames for security reasons.</p>
+                            <p>Please open <a href="${window.location.href}" target="_blank">this link</a> in a new tab.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Security: Prevent inspection
+                Utils.disableDevTools();
+
+                // Security: Add beforeunload handler
+                window.addEventListener('beforeunload', this.handleBeforeUnload);
+
+                // Initialize UI
+                AuthManager.renderAuthScreen();
+                this.setupAuthStateListener();
+                GeolocationManager.checkPermission();
+
+                // Security: Add heartbeat to detect background tabs
+                this.startHeartbeat();
+            }
+
+            static handleBeforeUnload(e) {
+                if (state.activeSession && state.userRole === 'teacher') {
+                    e.preventDefault();
+                    e.returnValue = 'You have an active attendance session. Are you sure you want to leave?';
+                    return e.returnValue;
+                }
+            }
+
+            static startHeartbeat() {
+                setInterval(() => {
+                    if (document.hidden) {
+                        // Tab is in background
+                        if (state.activeSession && state.userRole === 'teacher') {
+                            // Consider ending session if teacher tab is inactive
+                            console.log('Teacher session might be inactive');
+                        }
+                    }
+                }, 30000); // Check every 30 seconds
+            }
+
+            static setupAuthStateListener() {
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        // Security: Verify email is verified
+                        if (!user.emailVerified && user.providerData[0].providerId === 'password') {
+                            await auth.signOut();
+                            Utils.showError('Please verify your email before logging in');
+                            return;
+                        }
+
+                        state.currentUser = user;
+                        await UserDataManager.fetchUserData();
+                        DashboardManager.renderDashboard();
+
+                        // Start session cleanup check
+                        UserDataManager.checkForStaleSessions();
+                    } else {
+                        state.reset();
+                        AuthManager.renderAuthScreen();
+                    }
+                });
+            }
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', AppInitializer.init);
+
+        // Handle window resize for responsive drawer
+        window.addEventListener('resize', () => {
+            if (document.querySelector('.drawer')) {
+                DashboardManager.updateDrawerState();
+            }
+        });
+    </script>
+</body>
+</html>
