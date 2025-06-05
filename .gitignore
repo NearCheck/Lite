@@ -1,24 +1,26 @@
+# Ignore specific HTML files
+nearcheck.html
+landecs.html
+new.html
 
-firebaseConfig.js
-.env
-.env.local
-.env.*.local
+# Ignore specific SVG file
+nearcheck.svg
 
-
-dist/
-build/
-
-
-node_modules/
-
-
+# Optional: Ignore OS/system or editor files
 .DS_Store
 Thumbs.db
 
-.vscode/
+# Optional: Ignore backup files
+*.bak
+*.tmp
 
+# Optional: Ignore build/output folders if you use them
+dist/
+build/
 
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Optional: Node.js tooling (if ever used)
+node_modules/
+
+# Optional: Ignore environment/config files
+.env
+firebaseConfig.js
