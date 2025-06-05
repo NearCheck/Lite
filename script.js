@@ -1,14 +1,16 @@
 // Firebase Configuration
+
 const firebaseConfig = {
-    apiKey: "AIzaSyDFBb1l7GHsPbCMT9_XI6Lqcor mossi88dxaAydTQ",
-    authDomain: "lite-50af2.firebaseapp.com",
-    databaseURL: "https://lite-50af2-default-rtdb.firebaseio.com",
-    projectId: "lite-50af2",
-    storageBucket: "lite-50af2.appspot.com",
-    messagingSenderId: "259126907909",
-    appId: "1:259126907909:web:9bde95a07abf54be42f86c",
-    measurementId: "G-YH5ET7LGS8"
+  apiKey: "AIzaSyBDyh-K_H39W-jyOaLoWZX5ryxE6uoTUkE",
+  authDomain: "nearcheck-ccbaa.firebaseapp.com",
+  projectId: "nearcheck-ccbaa",
+  storageBucket: "nearcheck-ccbaa.firebasestorage.app",
+  messagingSenderId: "589499653954",
+  appId: "1:589499653954:web:40d667f4d3c27fb444f2db",
+  measurementId: "G-L6FPSXE2SQ"
 };
+
+
 
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
