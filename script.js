@@ -159,6 +159,10 @@ class NearCheckApp {
           <h2>Access Restricted</h2>
           <p>NearCheck Lite is currently only available in the Philippines due to regulatory requirements.</p>
           <p>If you believe this is an error, please contact support.</p>
+         <a href="https://example.com/contact" class="contact-btn">
+  <button>Contact</button>
+</a>
+
         </div>
       </div>
       <style>
@@ -172,7 +176,7 @@ class NearCheckApp {
         }
         .country-restriction-card {
           background: white;
-          border-radius: 10px;
+          border-radius: 20px;
           padding: 30px;
           max-width: 500px;
           text-align: center;
@@ -191,22 +195,34 @@ class NearCheckApp {
           color: #7f8c8d;
           margin-bottom: 10px;
         }
+        .contact-btn button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.contact-btn button:hover {
+  background-color: #0056b3;
+}
+
       </style>
     `;
   }
   
   setupSecurityProtections() {
-    // Debugger detection
     this.security.debugCheckInterval = setInterval(() => {
       if (this.isDebuggerAttached()) {
         this.handleTamperingDetected();
       }
     }, 1000);
     
-    // Store initial script state
     this.security.tamperDetection.lastModified = document.lastModified;
     
-    // Context menu handling (only in production)
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
       document.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -214,7 +230,6 @@ class NearCheckApp {
       }, { passive: false });
     }
     
-    // Periodic IP country check
     this.security.ipCheckInterval = setInterval(async () => {
       try {
         const allowed = await this.checkCountryRestriction();
@@ -261,7 +276,6 @@ class NearCheckApp {
       this.updatePermissionState('prompt');
     }
     
-    // Load auto check-in preference
     const autoCheckInPref = localStorage.getItem('autoCheckInPref');
     if (autoCheckInPref) {
       this.locationPermission.autoCheckIn = autoCheckInPref === 'true';
