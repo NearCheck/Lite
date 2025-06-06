@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,15 +8,64 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
     <div id="app"></div>
+    
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="app.js"></script>
-    <script src="script.js"> </script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    
+    <!-- Configuration must come before app.js -->
+    <script src=".gitignore/config.js"></script>
+    
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    
+    <!-- Main Application -->
+    <script src="script.js"></script>
+    
+    <script>
+        // Initialize the app when everything is loaded
+        window.addEventListener('load', () => {
+            try {
+                const app = new NearCheckApp();
+                
+                // Handle window resize for responsive drawer
+                window.addEventListener('resize', () => {
+                    if (document.querySelector('.drawer')) {
+                        app.updateDrawerState();
+                    }
+                });
+            } catch (error) {
+                console.error('Initialization failed:', error);
+                document.getElementById('app').innerHTML = `
+                    <div class="error-container">
+                        <h2>Initialization Error</h2>
+                        <p>${error.message || 'Failed to initialize application'}</p>
+                        <button onclick="window.location.reload()">Reload Page</button>
+                    </div>
+                    <style>
+                        .error-container {
+                            padding: 20px;
+                            text-align: center;
+                            color: #dc3545;
+                        }
+                        button {
+                            padding: 10px 20px;
+                            background: #dc3545;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                        }
+                    </style>
+                `;
+            }
+        });
+    </script>
 </body>
-
 </html>
