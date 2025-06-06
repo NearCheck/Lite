@@ -1,26 +1,19 @@
-# Ignore specific HTML files
 nearcheck.html
 landecs.html
 new.html
 
-# Ignore specific SVG file
 nearcheck.svg
 
-# Optional: Ignore OS/system or editor files
 .DS_Store
 Thumbs.db
 
-# Optional: Ignore backup files
 *.bak
 *.tmp
 
-# Optional: Ignore build/output folders if you use them
 dist/
 build/
 
-# Optional: Node.js tooling (if ever used)
 node_modules/
 
-# Optional: Ignore environment/config files
 .env
-firebaseConfig.js
+config.js
