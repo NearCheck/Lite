@@ -1,1 +1,94 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Blocked</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(145deg, #ff4e50, #f9d423);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .container {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .container h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .container p {
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .container button {
+      padding: 0.7rem 1.5rem;
+      font-size: 1rem;
+      background: #ffffff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .container button:hover {
+      background: #f0f0f0;
+    }
+
+    @media (max-width: 500px) {
+      .container h1 {
+        font-size: 1.5rem;
+      }
+
+      .container p,
+      .container button {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+  <div class="container">
+    <h1>Access Blocked</h1>
+    <p>Access has been blocked for security reasons.<br>This app does not allow opening Developer Tools (right-click is disabled).</p>
+    <button onclick="alert('Please contact support for more info.')">Contact Support</button>
+  </div>
+
+  <script>
+    // Disable key combinations related to DevTools
+    document.addEventListener('keydown', function (e) {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
+        alert('Developer Tools are disabled for security reasons.');
+      }
+    });
+  </script>
+</body>
+</html>
