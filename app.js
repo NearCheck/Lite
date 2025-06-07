@@ -1,4 +1,4 @@
-// Main Application Class
+// Main Application
 class NearCheckApp {
   constructor() {
     this.currentUser = null;
@@ -10,17 +10,15 @@ class NearCheckApp {
     this.activeSession = null;
     this.activeSection = null;
     
-    // Location permission state
     this.locationPermission = {
       status: 'not-granted',
       lastUsed: null,
       timer: null,
-      expirationTime: 24 * 60 * 60 * 1000, // 24 hours
+      expirationTime: 24 * 60 * 60 * 1000,
       activityWindow: null,
       autoCheckIn: false
     };
     
-    // Security configurations
     this.security = {
       debugCheckInterval: null,
       tamperDetection: {
@@ -31,26 +29,20 @@ class NearCheckApp {
       ipCheckInterval: null
     };
     
-    // Initialize the app
     this.init();
   }
   
-  // Initialize the application
   async init() {
     try {
-      // Show loading state immediately
-      this.showLoading('Initializing application...');
-      
-      // Load configuration first
+      // Load configuration
       await this.loadConfig();
       
-      // Initialize Firebase services
+      // Initialize Firebase
       await this.initFirebase();
       
       // Check country restriction
       const allowed = await this.checkCountryRestriction();
       if (!allowed) {
-        this.hideLoading();
         this.showCountryRestrictionMessage();
         return;
       }
@@ -61,39 +53,35 @@ class NearCheckApp {
       // Set up auth state listener
       this.setupAuthStateListener();
       
+      // Initial render
+      this.renderAuthScreen();
+      
       // Check existing location permission
       this.checkExistingLocationPermission();
       
-      // Load necessary libraries in background
-      this.loadDependencies().catch(console.error);
-      
-      // Initial render
-      this.renderAuthScreen();
-      this.hideLoading();
+      // Load necessary libraries
+      await this.loadDependencies();
     } catch (error) {
       console.error('Initialization error:', error);
-      this.hideLoading();
       this.showError('Failed to initialize application. Please refresh the page.');
     }
   }
   
-  // Load configuration from config.js
   async loadConfig() {
-    return new Promise((resolve, reject) => {
-      if (typeof config !== 'undefined') {
-        resolve();
-        return;
-      }
-      
+    // Dynamically load config.js
+    await new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = 'config.js';
       script.onload = resolve;
       script.onerror = () => reject(new Error('Failed to load configuration'));
       document.head.appendChild(script);
     });
+    
+    if (typeof config === 'undefined') {
+      throw new Error('Configuration not loaded');
+    }
   }
   
-  // Load required dependencies
   async loadDependencies() {
     const dependencies = [
       'https://cdn.jsdelivr.net/npm/chart.js',
@@ -101,58 +89,50 @@ class NearCheckApp {
       'https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js'
     ];
     
-    await Promise.all(dependencies.map(url => {
-      return new Promise((resolve, reject) => {
-        if (document.querySelector(`script[src="${url}"]`)) {
-          resolve();
-          return;
-        }
-        
-        const script = document.createElement('script');
-        script.src = url;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }));
+    await Promise.all(dependencies.map(url => this.loadScript(url)));
   }
   
-  // Initialize Firebase services
+  async loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+  
   async initFirebase() {
     try {
       // Initialize Firebase
-      if (!firebase.apps.length) {
-        firebase.initializeApp(config.firebase);
-      }
+      firebase.initializeApp(config.firebase);
       
       // Initialize services
       this.auth = firebase.auth();
       this.db = firebase.firestore();
       this.storage = firebase.storage();
       
-      // Enable persistence with error handling
-      try {
-        await this.db.enablePersistence({
-          synchronizeTabs: true
-        }).catch(err => {
+      // Enable persistence
+      await this.db.enablePersistence()
+        .catch(err => {
           if (err.code === 'failed-precondition') {
-            console.warn('Persistence can only be enabled in one tab at a time.');
+            console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
           } else if (err.code === 'unimplemented') {
-            console.warn('Current browser does not support all persistence features.');
+            console.warn('The current browser does not support all of the features required to enable persistence.');
           }
         });
-      } catch (error) {
-        console.warn('Firebase persistence error:', error);
-      }
     } catch (error) {
       console.error('Firebase initialization error:', error);
       throw new Error('Failed to initialize Firebase services');
     }
   }
   
-  // Check if user is in allowed country
   async checkCountryRestriction() {
-    // Allow local development
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return true;
     }
@@ -169,7 +149,6 @@ class NearCheckApp {
     }
   }
   
-  // Show country restriction message
   showCountryRestrictionMessage() {
     const appContainer = document.getElementById('app');
     appContainer.innerHTML = `
@@ -179,18 +158,12 @@ class NearCheckApp {
           <h2>Access Restricted</h2>
           <p>NearCheck Lite is currently only available in the Philippines due to regulatory requirements.</p>
           <p>If you believe this is an error, please contact support.</p>
-          <div class="contact-btn">
-            <button class="btn-primary">Contact Support</button>
-          </div>
+          <a href="https://example.com/contact" class="contact-btn">
+            <button>Contact</button>
+          </a>
         </div>
       </div>
-    `;
-    
-    // Add basic styles if not already present
-    if (!document.getElementById('restriction-styles')) {
-      const style = document.createElement('style');
-      style.id = 'restriction-styles';
-      style.textContent = `
+      <style>
         .country-restriction-container {
           display: flex;
           justify-content: center;
@@ -229,29 +202,23 @@ class NearCheckApp {
           cursor: pointer;
           font-weight: bold;
           transition: background-color 0.3s ease;
-          margin-top: 15px;
         }
         .contact-btn button:hover {
           background-color: #0056b3;
         }
-      `;
-      document.head.appendChild(style);
-    }
+      </style>
+    `;
   }
   
-  // Set up security protections
   setupSecurityProtections() {
-    // Debugger detection
     this.security.debugCheckInterval = setInterval(() => {
       if (this.isDebuggerAttached()) {
         this.handleTamperingDetected();
       }
     }, 1000);
     
-    // Record last modified time
     this.security.tamperDetection.lastModified = document.lastModified;
     
-    // Disable right-click in production
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
       document.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -259,7 +226,6 @@ class NearCheckApp {
       }, { passive: false });
     }
     
-    // Periodic IP/country check
     this.security.ipCheckInterval = setInterval(async () => {
       try {
         const allowed = await this.checkCountryRestriction();
@@ -270,17 +236,15 @@ class NearCheckApp {
       } catch (error) {
         console.error('IP check failed:', error);
       }
-    }, 3600000); // Every hour
+    }, 3600000);
   }
   
-  // Check if debugger is attached
   isDebuggerAttached() {
     const startTime = performance.now();
     debugger;
     return performance.now() - startTime > 100;
   }
   
-  // Handle security violations
   handleTamperingDetected() {
     clearInterval(this.security.debugCheckInterval);
     clearInterval(this.security.ipCheckInterval);
@@ -292,7 +256,6 @@ class NearCheckApp {
     }, 2000);
   }
   
-  // Check existing location permissions
   checkExistingLocationPermission() {
     if (navigator.permissions) {
       navigator.permissions.query({ name: 'geolocation' })
@@ -309,14 +272,12 @@ class NearCheckApp {
       this.updatePermissionState('prompt');
     }
     
-    // Load auto check-in preference
     const autoCheckInPref = localStorage.getItem('autoCheckInPref');
     if (autoCheckInPref) {
       this.locationPermission.autoCheckIn = autoCheckInPref === 'true';
     }
   }
   
-  // Update permission state
   updatePermissionState(state) {
     switch (state) {
       case 'granted':
@@ -338,7 +299,6 @@ class NearCheckApp {
     }
   }
   
-  // Start activity window for location access
   startActivityWindow() {
     if (this.locationPermission.timer) {
       clearTimeout(this.locationPermission.timer);
@@ -360,7 +320,6 @@ class NearCheckApp {
     }, this.locationPermission.expirationTime);
   }
   
-  // Extend activity window
   extendActivityWindow() {
     if (this.locationPermission.status === 'granted') {
       this.startActivityWindow();
@@ -368,7 +327,6 @@ class NearCheckApp {
     }
   }
   
-  // Clear activity window
   clearActivityWindow() {
     if (this.locationPermission.timer) {
       clearTimeout(this.locationPermission.timer);
@@ -377,7 +335,6 @@ class NearCheckApp {
     this.locationPermission.activityWindow = null;
   }
   
-  // Request location permission with context
   async requestLocationPermission(context = 'general') {
     if (this.locationPermission.status === 'granted') {
       return true;
@@ -414,7 +371,6 @@ class NearCheckApp {
     }
   }
   
-  // Show location permission prompt with context
   async showLocationPermissionPrompt(context) {
     let contextMessage = '';
     let icon = 'fa-map-marker-alt';
@@ -467,6 +423,26 @@ class NearCheckApp {
               </div>
             </div>
           </div>
+          <style>
+            .auto-checkin-option {
+              margin-top: 16px;
+              padding: 12px;
+              background: #f8f9fa;
+              border-radius: 8px;
+            }
+            .auto-checkin-option label {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              cursor: pointer;
+            }
+            .small-text {
+              font-size: 12px;
+              color: #6c757d;
+              margin-top: 4px;
+              margin-left: 24px;
+            }
+          </style>
         `,
         buttons: [
           {
@@ -493,7 +469,6 @@ class NearCheckApp {
     });
   }
   
-  // Set up auth state listener
   setupAuthStateListener() {
     this.auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -501,7 +476,7 @@ class NearCheckApp {
         await this.fetchUserData();
         this.renderDashboard();
         
-        // Check for auto check-in if enabled
+        // Check for auto check-in
         if (this.locationPermission.status === 'granted' && this.locationPermission.autoCheckIn) {
           this.checkForAutoCheckIn();
         }
@@ -513,7 +488,6 @@ class NearCheckApp {
     });
   }
   
-  // Check for auto check-in opportunities
   async checkForAutoCheckIn() {
     if (this.userRole !== 'student' || !this.sections.length) return;
     
@@ -536,7 +510,7 @@ class NearCheckApp {
           const session = sessionsSnapshot.docs[0].data();
           const sessionId = sessionsSnapshot.docs[0].id;
           
-          // Skip if already checked in
+          // Check if already checked in
           if (session.attendees && session.attendees.includes(this.currentUser.uid)) {
             continue;
           }
@@ -576,7 +550,6 @@ class NearCheckApp {
     }
   }
   
-  // Fetch user data based on role
   async fetchUserData() {
     try {
       this.showLoading('Loading your data...');
@@ -587,7 +560,6 @@ class NearCheckApp {
         this.userRole = userDoc.data().role;
         
         if (this.userRole === 'teacher') {
-          // Fetch teacher's sections
           const sectionsSnapshot = await this.db.collection('sections')
             .where('teacherId', '==', this.currentUser.uid)
             .get();
@@ -639,15 +611,14 @@ class NearCheckApp {
     }
   }
   
-  // Render authentication screen
   renderAuthScreen() {
     this.currentView = 'auth';
     const appContainer = document.getElementById('app');
     appContainer.innerHTML = `
       <div class="auth-container">
-        <div class="auth-card">
+        <div class="auth-card card">
           <div class="auth-header">
-            <img src="nearcheck.svg" alt="NearCheck Logo" class="auth-logo">
+            <img src="nearcheck.svg" style="width: 50%; height: auto;">
             <h1>NearCheck Lite</h1>
             <p>Smart geolocation-based attendance system for educators and students</p>
           </div>
@@ -656,177 +627,35 @@ class NearCheckApp {
       </div>
     `;
     
-    // Add basic styles if not already present
-    if (!document.getElementById('auth-styles')) {
-      const style = document.createElement('style');
-      style.id = 'auth-styles';
-      style.textContent = `
-        .auth-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          padding: 20px;
-          background-color: #f8f9fa;
-        }
-        .auth-card {
-          background: white;
-          border-radius: 16px;
-          padding: 32px;
-          width: 100%;
-          max-width: 450px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .auth-header {
-          text-align: center;
-          margin-bottom: 24px;
-        }
-        .auth-logo {
-          width: 50%;
-          height: auto;
-          margin-bottom: 16px;
-        }
-        .auth-header h1 {
-          margin: 0 0 8px 0;
-          color: #2c3e50;
-        }
-        .auth-header p {
-          margin: 0;
-          color: #7f8c8d;
-        }
-        .role-selector {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-        .role-button {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 14px 20px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: white;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: left;
-        }
-        .role-button:hover {
-          border-color: #cbd5e0;
-          background-color: #f8f9fa;
-        }
-        .role-button i {
-          font-size: 20px;
-          color: #4a5568;
-        }
-        .auth-footer {
-          text-align: center;
-          margin-top: 16px;
-          font-size: 14px;
-        }
-        .auth-footer a {
-          color: #4299e1;
-          text-decoration: none;
-          font-weight: 500;
-        }
-        .auth-footer a:hover {
-          text-decoration: underline;
-        }
-        .input-group {
-          margin-bottom: 16px;
-        }
-        .input-group label {
-          display: block;
-          margin-bottom: 6px;
-          font-weight: 500;
-          color: #4a5568;
-        }
-        .input-group input {
-          width: 100%;
-          padding: 12px 16px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 16px;
-          transition: border-color 0.2s;
-        }
-        .input-group input:focus {
-          outline: none;
-          border-color: #4299e1;
-          box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
-        }
-        .input-hint {
-          margin-top: 4px;
-          font-size: 12px;
-          color: #718096;
-        }
-        .button {
-          display: inline-block;
-          padding: 12px 24px;
-          border: none;
-          border-radius: 8px;
-          font-size: 16px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .button-primary {
-          background-color: #4299e1;
-          color: white;
-        }
-        .button-primary:hover {
-          background-color: #3182ce;
-        }
-        .button-secondary {
-          background-color: #e2e8f0;
-          color: #4a5568;
-        }
-        .button-secondary:hover {
-          background-color: #cbd5e0;
-        }
-        .w-100 {
-          width: 100%;
-        }
-        .mt-4 {
-          margin-top: 16px;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
     this.renderRoleSelection();
   }
   
-  // Render role selection screen
   renderRoleSelection() {
     const authContent = document.getElementById('auth-content');
     authContent.innerHTML = `
       <div class="role-selector">
-        <button class="role-button" id="teacher-role-btn">
+        <button class="role-button" id="teacher-role-btn" aria-label="I'm a Teacher">
           <span>I'm a Teacher</span>
-          <i class="fas fa-chalkboard-teacher"></i>
+          <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
         </button>
-        <button class="role-button" id="student-role-btn">
+        <button class="role-button" id="student-role-btn" aria-label="I'm a Student">
           <span>I'm a Student</span>
-          <i class="fas fa-user-graduate"></i>
+          <i class="fas fa-user-graduate" aria-hidden="true"></i>
         </button>
       </div>
-      <div class="auth-footer">
-        Already have an account? <a href="#" id="sign-in-link">Sign in</a>
+      <div class="auth-footer" style="font-weight:400; font-size: 1rem;">
+        Already have an account? <a href="#" id="sign-in-link" style="font-weight:500;">Sign in</a>
       </div>
     `;
     
-    document.getElementById('teacher-role-btn').addEventListener('click', () => 
-      this.renderSignUpForm('teacher'));
-    document.getElementById('student-role-btn').addEventListener('click', () => 
-      this.renderSignUpForm('student'));
+    document.getElementById('teacher-role-btn').addEventListener('click', () => this.renderSignUpForm('teacher'));
+    document.getElementById('student-role-btn').addEventListener('click', () => this.renderSignUpForm('student'));
     document.getElementById('sign-in-link').addEventListener('click', (e) => {
       e.preventDefault();
       this.renderSignInForm();
     });
   }
   
-  // Render sign-up form based on role
   renderSignUpForm(role) {
     const authContent = document.getElementById('auth-content');
     
@@ -835,32 +664,32 @@ class NearCheckApp {
         <form id="signup-form">
           <div class="input-group">
             <label for="fullname">Full Name</label>
-            <input type="text" id="fullname" required maxlength="100">
+            <input type="text" id="fullname" required aria-required="true" maxlength="100">
           </div>
           <div class="input-group">
             <label for="email">Email</label>
-            <input type="email" id="email" required maxlength="100">
+            <input type="email" id="email" required aria-required="true" maxlength="100">
           </div>
           <div class="input-group">
             <label for="password">Password</label>
-            <input type="password" id="password" required minlength="6" maxlength="100">
+            <input type="password" id="password" required minlength="6" aria-required="true" maxlength="100">
             <p class="input-hint">Minimum 6 characters</p>
           </div>
           <div class="input-group">
             <label for="confirm-password">Confirm Password</label>
-            <input type="password" id="confirm-password" required minlength="6" maxlength="100">
+            <input type="password" id="confirm-password" required minlength="6" aria-required="true" maxlength="100">
           </div>
           <div class="input-group">
             <label for="birthdate">Birthdate (Must be 20+)</label>
-            <div class="birthdate-inputs">
-              <input type="text" id="birthdate-day" placeholder="DD" maxlength="2" pattern="[0-9]*" inputmode="numeric">
-              <input type="text" id="birthdate-month" placeholder="MM" maxlength="2" pattern="[0-9]*" inputmode="numeric">
-              <input type="text" id="birthdate-year" placeholder="YYYY" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="birthdate-day" placeholder="DD" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+              <input type="text" id="birthdate-month" placeholder="MM" maxlength="2" style="flex: 1;" pattern="[0-9]*" inputmode="numeric">
+              <input type="text" id="birthdate-year" placeholder="YYYY" maxlength="4" style="flex: 2;" pattern="[0-9]*" inputmode="numeric">
             </div>
           </div>
           <div class="input-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="privacy-policy" required> 
+            <label>
+              <input type="checkbox" id="privacy-policy" required aria-required="true"> 
               I agree to the <a href="#" id="privacy-policy-link">Privacy Policy</a>
             </label>
           </div>
@@ -871,66 +700,40 @@ class NearCheckApp {
         </div>
       `;
       
-      // Add birthdate input styles
-      if (!document.getElementById('birthdate-styles')) {
-        const style = document.createElement('style');
-        style.id = 'birthdate-styles';
-        style.textContent = `
-          .birthdate-inputs {
-            display: flex;
-            gap: 8px;
-          }
-          .birthdate-inputs input {
-            flex: 1;
-            text-align: center;
-          }
-          .birthdate-inputs input:nth-child(3) {
-            flex: 2;
-          }
-          .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-          }
-        `;
-        document.head.appendChild(style);
-      }
-      
       this.setupDateInputs();
     } else {
       authContent.innerHTML = `
         <form id="signup-form">
           <div class="input-group">
             <label for="fullname">Full Name</label>
-            <input type="text" id="fullname" required maxlength="100">
+            <input type="text" id="fullname" required aria-required="true" maxlength="100">
           </div>
           <div class="input-group">
             <label for="email">Email</label>
-            <input type="email" id="email" required maxlength="100">
+            <input type="email" id="email" required aria-required="true" maxlength="100">
           </div>
           <div class="input-group">
             <label for="password">Password</label>
-            <input type="password" id="password" required minlength="6" maxlength="100">
+            <input type="password" id="password" required minlength="6" aria-required="true" maxlength="100">
             <p class="input-hint">Minimum 6 characters</p>
           </div>
           <div class="input-group">
             <label for="confirm-password">Confirm Password</label>
-            <input type="password" id="confirm-password" required minlength="6" maxlength="100">
+            <input type="password" id="confirm-password" required minlength="6" aria-required="true" maxlength="100">
           </div>
           <div class="input-group">
             <label for="section-id">Section ID (optional)</label>
             <input type="text" id="section-id" placeholder="Provided by your teacher" maxlength="50">
           </div>
           <div class="input-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="age-confirm" required> 
+            <label>
+              <input type="checkbox" id="age-confirm" required aria-required="true"> 
               I confirm I'm 13 years or older
             </label>
           </div>
           <div class="input-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="privacy-policy" required> 
+            <label>
+              <input type="checkbox" id="privacy-policy" required aria-required="true"> 
               I agree to the <a href="#" id="privacy-policy-link">Privacy Policy</a>
             </label>
           </div>
@@ -941,7 +744,6 @@ class NearCheckApp {
         </div>
       `;
       
-      // Pre-fill section ID if in URL
       const urlParams = new URLSearchParams(window.location.search);
       const sectionId = urlParams.get('sectionid');
       if (sectionId) {
@@ -965,7 +767,6 @@ class NearCheckApp {
     });
   }
   
-  // Set up date inputs for teacher signup
   setupDateInputs() {
     const dayInput = document.getElementById('birthdate-day');
     const monthInput = document.getElementById('birthdate-month');
@@ -999,21 +800,20 @@ class NearCheckApp {
     });
   }
   
-  // Render sign-in form
   renderSignInForm() {
     const authContent = document.getElementById('auth-content');
     authContent.innerHTML = `
       <form id="signin-form">
         <div class="input-group">
           <label for="email">Email</label>
-          <input type="email" id="email" required maxlength="100">
+          <input type="email" id="email" required aria-required="true" maxlength="100">
         </div>
         <div class="input-group">
           <label for="password">Password</label>
-          <input type="password" id="password" required maxlength="100">
+          <input type="password" id="password" required aria-required="true" maxlength="100">
         </div>
         <div class="input-group">
-          <a href="#" id="forgot-password">Forgot password?</a>
+          <a href="#" id="forgot-password" style="font-size: 14px; text-align: right; display: block;">Forgot password?</a>
         </div>
         <button type="submit" class="button button-primary w-100">Sign In</button>
       </form>
@@ -1038,7 +838,6 @@ class NearCheckApp {
     });
   }
   
-  // Handle user sign-up
   async handleSignUp(role) {
     const fullName = document.getElementById('fullname').value.trim();
     const email = document.getElementById('email').value.trim();
@@ -1144,7 +943,6 @@ class NearCheckApp {
     }
   }
   
-  // Handle user sign-in
   async handleSignIn() {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -1179,7 +977,6 @@ class NearCheckApp {
     }
   }
   
-  // Render main dashboard
   renderDashboard() {
     this.currentView = 'dashboard';
     const appContainer = document.getElementById('app');
@@ -1239,122 +1036,6 @@ class NearCheckApp {
       </div>
     `;
     
-    // Add dashboard styles if not already present
-    if (!document.getElementById('dashboard-styles')) {
-      const style = document.createElement('style');
-      style.id = 'dashboard-styles';
-      style.textContent = `
-        .dashboard {
-          display: flex;
-          min-height: 100vh;
-        }
-        .drawer {
-          width: 280px;
-          background: #2d3748;
-          color: white;
-          transition: transform 0.3s ease;
-          position: fixed;
-          height: 100vh;
-          z-index: 100;
-          transform: translateX(-280px);
-        }
-        .drawer.open {
-          transform: translateX(0);
-        }
-        .drawer-header {
-          padding: 20px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          border-bottom: 1px solid #4a5568;
-        }
-        .drawer-header h2 {
-          margin: 0;
-          font-size: 20px;
-        }
-        .menu-toggle {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 20px;
-          cursor: pointer;
-          padding: 8px;
-          border-radius: 4px;
-        }
-        .menu-toggle:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-        .drawer-menu {
-          padding: 16px 0;
-        }
-        .menu-item {
-          display: flex;
-          align-items: center;
-          padding: 12px 20px;
-          color: #cbd5e0;
-          text-decoration: none;
-          gap: 12px;
-          transition: all 0.2s;
-        }
-        .menu-item:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: white;
-        }
-        .menu-item.active {
-          background: #4299e1;
-          color: white;
-        }
-        .drawer-footer {
-          padding: 20px;
-          position: absolute;
-          bottom: 0;
-          width: 100%;
-        }
-        .button-danger {
-          background-color: #e53e3e;
-          color: white;
-          width: 100%;
-        }
-        .button-danger:hover {
-          background-color: #c53030;
-        }
-        .main-content {
-          flex: 1;
-          margin-left: 0;
-          transition: margin-left 0.3s ease;
-        }
-        .content-header {
-          padding: 20px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-bottom: 1px solid #e2e8f0;
-        }
-        .content-header h1 {
-          margin: 0;
-          font-size: 24px;
-          color: #2d3748;
-        }
-        .content-body {
-          padding: 20px;
-        }
-        @media (min-width: 992px) {
-          .drawer {
-            transform: translateX(0);
-            position: relative;
-          }
-          .main-content {
-            margin-left: 280px;
-          }
-          .menu-toggle {
-            display: none;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
-    // Set up event listeners for navigation
     document.querySelectorAll('.menu-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1364,32 +1045,23 @@ class NearCheckApp {
       });
     });
     
-    // Sign out button
     document.getElementById('sign-out-btn').addEventListener('click', () => {
       this.auth.signOut();
     });
     
-    // Drawer toggle buttons
     document.getElementById('drawer-toggle').addEventListener('click', this.toggleDrawer.bind(this));
     document.getElementById('mobile-drawer-toggle').addEventListener('click', this.toggleDrawer.bind(this));
     
-    // Update drawer state based on screen size
     this.updateDrawerState();
-    
-    // Render initial content
     this.renderContent('dashboard');
   }
   
-  // Toggle drawer visibility
   toggleDrawer() {
     document.querySelector('.drawer').classList.toggle('open');
   }
   
-  // Update drawer state based on screen size
   updateDrawerState() {
     const drawer = document.querySelector('.drawer');
-    if (!drawer) return;
-    
     if (window.innerWidth >= 992) {
       drawer.classList.add('open');
     } else {
@@ -1397,7 +1069,6 @@ class NearCheckApp {
     }
   }
   
-  // Set active menu item
   setActiveMenuItem(view) {
     document.querySelectorAll('.menu-item').forEach(item => {
       item.classList.remove('active');
@@ -1409,18 +1080,12 @@ class NearCheckApp {
     });
   }
   
-  // Render content based on view
   renderContent(view) {
     const contentArea = document.getElementById('content-area');
     if (!contentArea) return;
     
-    // Update header title
-    const headerTitle = document.querySelector('.content-header h1');
-    if (headerTitle) {
-      headerTitle.textContent = view.charAt(0).toUpperCase() + view.slice(1).replace(/-/g, ' ');
-    }
+    document.querySelector('.content-header h1').textContent = view.charAt(0).toUpperCase() + view.slice(1).replace(/-/g, ' ');
     
-    // Render appropriate content
     switch (view) {
       case 'dashboard':
         this.renderDashboardContent();
@@ -1445,7 +1110,6 @@ class NearCheckApp {
     }
   }
   
-  // Render dashboard content
   renderDashboardContent() {
     const now = new Date();
     const hours = now.getHours();
@@ -1467,7 +1131,7 @@ class NearCheckApp {
       </div>
       
       ${this.userRole === 'teacher' ? `
-        <div class="header-actions">
+        <div class="header-actions" style="margin-bottom: 24px;">
           <button class="button button-primary" id="create-section-btn">
             <i class="fas fa-plus"></i>
             <span>Create Section</span>
@@ -1478,8 +1142,8 @@ class NearCheckApp {
       ${this.sections.length > 0 ? `
         <div class="section-carousel">
           ${this.sections.map(section => `
-            <div class="card" data-section-id="${section.id}">
-              <div class="section-menu">
+            <div class="section-card card" data-section-id="${section.id}">
+              <div class="section-menu" aria-label="Section options">
                 <i class="fas fa-ellipsis-v"></i>
                 <div class="dropdown-menu">
                   ${this.userRole === 'teacher' ? `
@@ -1505,7 +1169,7 @@ class NearCheckApp {
               ${this.userRole === 'teacher' ? `
                 <p>${section.students ? section.students.length : 0} students</p>
                 <div class="section-actions">
-                  <button class="button button-primary start-session-btn">
+                  <button class="button button-primary start-session-btn" aria-label="Start attendance session for ${section.name}">
                     Start Session
                   </button>
                 </div>
@@ -1515,7 +1179,7 @@ class NearCheckApp {
                   <span>${section.teacherName || 'Teacher'}</span>
                 </div>
                 <div class="section-actions">
-                  <button class="button button-primary checkin-btn">
+                  <button class="button button-primary checkin-btn" aria-label="Check in to ${section.name}">
                     Check In
                   </button>
                 </div>
@@ -1529,54 +1193,21 @@ class NearCheckApp {
           <h3>No Sections Found</h3>
           <p>${this.userRole === 'teacher' ? 'Create your first section to get started with attendance tracking' : 'Join a section using an invitation link from your teacher to begin checking in'}</p>
           ${this.userRole === 'teacher' ? `
-            <button class="button button-primary" id="create-section-btn-2">
+            <button class="button button-primary mt-4" id="create-section-btn-2">
               Create Section
             </button>
           ` : `
-            <button class="button button-primary" id="join-section-btn">
+            <button class="button button-primary mt-4" id="join-section-btn">
               Join Section
             </button>
           `}
         </div>
       `}
-    `;
-    
-    // Add section card styles if not already present
-    if (!document.getElementById('section-card-styles')) {
-      const style = document.createElement('style');
-      style.id = 'section-card-styles';
-      style.textContent = `
-        .greeting {
-          margin-bottom: 24px;
-        }
-        .greeting h2 {
-          margin: 0 0 4px 0;
-          color: #2d3748;
-        }
-        .greeting p {
-          margin: 0;
-          color: #718096;
-        }
-        .header-actions {
-          margin-bottom: 24px;
-        }
-        .section-carousel {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
-        }
-        .card {
-          background: white;
-          border-radius: 12px;
-          padding: 20px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          position: relative;
-        }
+      <style>
         .section-menu {
-          position: absolute;
-          top: 16px;
-          right: 16px;
+          position: relative;
           cursor: pointer;
+          margin-left: auto;
           width: 24px;
           height: 24px;
           display: flex;
@@ -1585,9 +1216,11 @@ class NearCheckApp {
           border-radius: 50%;
           transition: background-color 0.2s;
         }
+        
         .section-menu:hover {
           background-color: rgba(0, 0, 0, 0.1);
         }
+        
         .dropdown-menu {
           display: none;
           position: absolute;
@@ -1600,9 +1233,11 @@ class NearCheckApp {
           min-width: 180px;
           overflow: hidden;
         }
+        
         .section-menu:hover .dropdown-menu {
           display: block;
         }
+        
         .dropdown-item {
           display: flex;
           align-items: center;
@@ -1612,72 +1247,18 @@ class NearCheckApp {
           gap: 8px;
           font-size: 14px;
         }
+        
         .dropdown-item:hover {
           background-color: #f5f5f5;
         }
+        
         .dropdown-item i {
           width: 16px;
           text-align: center;
         }
-        .card h3 {
-          margin: 0 0 8px 0;
-          color: #2d3748;
-        }
-        .card p {
-          margin: 0 0 8px 0;
-          color: #718096;
-        }
-        .section-id {
-          display: inline-block;
-          font-size: 12px;
-          background: #edf2f7;
-          padding: 2px 8px;
-          border-radius: 4px;
-          color: #4a5568;
-          margin-bottom: 12px;
-        }
-        .teacher-info {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 16px;
-        }
-        .teacher-avatar {
-          width: 32px;
-          height: 32px;
-          background: #4299e1;
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-        }
-        .section-actions {
-          margin-top: 16px;
-        }
-        .empty-state {
-          text-align: center;
-          padding: 40px 20px;
-        }
-        .empty-state i {
-          font-size: 48px;
-          color: #cbd5e0;
-          margin-bottom: 16px;
-        }
-        .empty-state h3 {
-          margin: 0 0 8px 0;
-          color: #2d3748;
-        }
-        .empty-state p {
-          margin: 0 0 16px 0;
-          color: #718096;
-        }
-      `;
-      document.head.appendChild(style);
-    }
+      </style>
+    `;
     
-    // Set up event listeners for teacher actions
     if (this.userRole === 'teacher') {
       const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
       if (createSectionBtn) {
@@ -1686,14 +1267,13 @@ class NearCheckApp {
       
       document.querySelectorAll('.start-session-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const sectionCard = e.target.closest('.card');
+          const sectionCard = e.target.closest('.section-card');
           const sectionId = sectionCard.getAttribute('data-section-id');
           const section = this.sections.find(s => s.id === sectionId);
           this.showStartSessionModal(section);
         });
       });
     } else {
-      // Set up event listeners for student actions
       const joinSectionBtn = document.getElementById('join-section-btn');
       if (joinSectionBtn) {
         joinSectionBtn.addEventListener('click', () => this.renderSectionsContent());
@@ -1701,7 +1281,7 @@ class NearCheckApp {
       
       document.querySelectorAll('.checkin-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-          const sectionCard = e.target.closest('.card');
+          const sectionCard = e.target.closest('.section-card');
           const sectionId = sectionCard.getAttribute('data-section-id');
           const section = this.sections.find(s => s.id === sectionId);
           this.handleStudentCheckIn(section);
@@ -1763,12 +1343,11 @@ class NearCheckApp {
     });
   }
   
-  // Render sections content
   renderSectionsContent() {
     const contentArea = document.getElementById('content-area');
     contentArea.innerHTML = `
       ${this.userRole === 'teacher' ? `
-        <div class="header-actions">
+        <div class="header-actions" style="margin-bottom: 24px;">
           <button class="button button-primary" id="create-section-btn">
             <i class="fas fa-plus"></i>
             <span>Create Section</span>
@@ -1779,10 +1358,10 @@ class NearCheckApp {
       ${this.sections.length > 0 ? `
         <div class="section-list">
           ${this.sections.map(section => `
-            <div class="card" data-section-id="${section.id}">
-              <div class="section-header">
+            <div class="card mb-4" data-section-id="${section.id}">
+              <div class="d-flex align-items-center justify-content-between">
                 <h3>${section.name}</h3>
-                <div class="section-menu">
+                <div class="section-menu" aria-label="Section options">
                   <i class="fas fa-ellipsis-v"></i>
                   <div class="dropdown-menu">
                     ${this.userRole === 'teacher' ? `
@@ -1809,7 +1388,7 @@ class NearCheckApp {
               <p><strong>Check-in Range:</strong> ${section.checkInRange}m</p>
               
               ${this.userRole === 'teacher' ? `
-                <div class="section-actions">
+                <div class="section-actions mt-4" style="display: flex; gap: 8px;">
                   <button class="button button-primary invite-students-btn">
                     <i class="fas fa-user-plus"></i>
                     <span>Invite Students</span>
@@ -1829,64 +1408,22 @@ class NearCheckApp {
           <h3>No Sections Found</h3>
           <p>${this.userRole === 'teacher' ? 'Create your first section to start managing attendance' : 'Join a section to begin checking in to classes'}</p>
           ${this.userRole === 'teacher' ? `
-            <button class="button button-primary" id="create-section-btn-2">
+            <button class="button button-primary mt-4" id="create-section-btn-2">
               Create Section
             </button>
           ` : `
-            <div class="join-section-form">
+            <div class="input-group mt-4">
               <input type="text" id="join-section-input" placeholder="Enter Section ID">
-              <button class="button button-primary" id="join-section-btn">
+              <button class="button button-primary w-100" id="join-section-btn">
                 Join Section
               </button>
             </div>
-            <p class="text-muted">Get the section ID from your teacher</p>
+            <p class="text-center text-muted mt-2">Get the section ID from your teacher</p>
           `}
         </div>
       `}
     `;
     
-    // Add section list styles if not already present
-    if (!document.getElementById('section-list-styles')) {
-      const style = document.createElement('style');
-      style.id = 'section-list-styles';
-      style.textContent = `
-        .section-list {
-          display: grid;
-          gap: 16px;
-        }
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
-        }
-        .section-header h3 {
-          margin: 0;
-        }
-        .text-muted {
-          color: #718096;
-        }
-        .section-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 16px;
-        }
-        .join-section-form {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 8px;
-        }
-        .join-section-form input {
-          flex: 1;
-          padding: 10px 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
-    // Set up event listeners for teacher actions
     if (this.userRole === 'teacher') {
       const createSectionBtn = document.getElementById('create-section-btn') || document.getElementById('create-section-btn-2');
       if (createSectionBtn) {
@@ -1911,7 +1448,6 @@ class NearCheckApp {
         });
       });
     } else {
-      // Set up event listeners for student actions
       const joinSectionBtn = document.getElementById('join-section-btn');
       if (joinSectionBtn) {
         joinSectionBtn.addEventListener('click', async () => {
@@ -1997,13 +1533,12 @@ class NearCheckApp {
     });
   }
   
-  // Render students content (teacher only)
   renderStudentsContent() {
     if (this.userRole !== 'teacher') return;
     
     const contentArea = document.getElementById('content-area');
     contentArea.innerHTML = `
-      <div class="header-actions">
+      <div class="header-actions" style="margin-bottom: 24px;">
         <button class="button button-primary" id="export-students-btn">
           <i class="fas fa-file-export"></i>
           <span>Export Student List</span>
@@ -2013,9 +1548,9 @@ class NearCheckApp {
       ${this.students.length > 0 ? `
         <div class="students-list">
           ${this.students.map(student => `
-            <div class="card" data-student-id="${student.id}">
-              <div class="student-header">
-                <div class="student-info">
+            <div class="card mb-4" data-student-id="${student.id}">
+              <div class="d-flex align-items-center justify-content-between">
+                <div style="display: flex; align-items: center; gap: 12px;">
                   <div class="student-avatar">
                     ${student.fullName ? student.fullName.charAt(0) : 'S'}
                   </div>
@@ -2024,7 +1559,7 @@ class NearCheckApp {
                     <p class="text-muted">${student.email}</p>
                   </div>
                 </div>
-                <div class="student-menu">
+                <div class="student-menu" aria-label="Student options">
                   <i class="fas fa-ellipsis-v"></i>
                   <div class="dropdown-menu">
                     <a href="#" class="dropdown-item" data-action="view" data-student-id="${student.id}">
@@ -2036,7 +1571,7 @@ class NearCheckApp {
                   </div>
                 </div>
               </div>
-              <div class="student-stats">
+              <div class="student-sections mt-3">
                 <p><strong>Sections:</strong> ${student.sections ? student.sections.length : 0}</p>
               </div>
             </div>
@@ -2047,37 +1582,16 @@ class NearCheckApp {
           <i class="fas fa-users"></i>
           <h3>No Students Found</h3>
           <p>Students will appear here once they join your sections. Invite students to your sections to get started.</p>
-          <button class="button button-primary" id="invite-students-btn">
+          <button class="button button-primary mt-4" id="invite-students-btn">
             Invite Students
           </button>
         </div>
       `}
-    `;
-    
-    // Add student list styles if not already present
-    if (!document.getElementById('student-list-styles')) {
-      const style = document.createElement('style');
-      style.id = 'student-list-styles';
-      style.textContent = `
-        .students-list {
-          display: grid;
-          gap: 16px;
-        }
-        .student-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-        .student-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+      <style>
         .student-avatar {
           width: 40px;
           height: 40px;
-          background-color: #4299e1;
+          background-color: var(--primary);
           color: white;
           border-radius: 50%;
           display: flex;
@@ -2085,22 +1599,61 @@ class NearCheckApp {
           justify-content: center;
           font-weight: bold;
         }
-        .student-info h3 {
-          margin: 0;
-          font-size: 16px;
+        
+        .student-menu {
+          position: relative;
+          cursor: pointer;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: background-color 0.2s;
         }
-        .student-info p {
-          margin: 0;
+        
+        .student-menu:hover {
+          background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .dropdown-menu {
+          display: none;
+          position: absolute;
+          right: 0;
+          top: 100%;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          z-index: 100;
+          min-width: 180px;
+          overflow: hidden;
+        }
+        
+        .student-menu:hover .dropdown-menu {
+          display: block;
+        }
+        
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          padding: 8px 16px;
+          color: #333;
+          text-decoration: none;
+          gap: 8px;
           font-size: 14px;
         }
-        .student-stats {
-          margin-top: 12px;
+        
+        .dropdown-item:hover {
+          background-color: #f5f5f5;
         }
-      `;
-      document.head.appendChild(style);
-    }
+        
+        .dropdown-item i {
+          width: 16px;
+          text-align: center;
+        }
+      </style>
+    `;
     
-    // Set up event listeners
     const inviteStudentsBtn = document.getElementById('invite-students-btn');
     if (inviteStudentsBtn) {
       inviteStudentsBtn.addEventListener('click', () => {
@@ -2163,168 +1716,159 @@ class NearCheckApp {
     });
   }
   
-  // Render reports content (teacher only)
   renderReportsContent() {
     if (this.userRole !== 'teacher') return;
     
     const contentArea = document.getElementById('content-area');
     contentArea.innerHTML = `
-      <div class="header-actions">
+      <div class="header-actions" style="margin-bottom: 24px;">
         <button class="button button-primary" id="export-reports-btn">
           <i class="fas fa-file-export"></i>
           <span>Export</span>
         </button>
       </div>
       
-      <div class="reports-filters">
-        <div class="filter-group">
-          <label for="report-section-filter">Section</label>
-          <select id="report-section-filter">
-            <option value="">All Sections</option>
-            ${this.sections.map(section => `
-              <option value="${section.id}">${section.name}</option>
-            `).join('')}
-          </select>
+      <div class="reports-filters-container">
+        <div class="filter-controls">
+          <div class="filter-select-wrapper">
+            <select class="filter-select" id="report-section-filter">
+              <option value="">All Sections</option>
+              ${this.sections.map(section => `
+                <option value="${section.id}">${section.name}</option>
+              `).join('')}
+            </select>
+            <div class="select-arrow"></div>
+          </div>
+          
+          <div class="filter-select-wrapper">
+            <select class="filter-select" id="report-time-filter">
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            <div class="select-arrow"></div>
+          </div>
         </div>
         
-        <div class="filter-group">
-          <label for="report-time-filter">Time Period</label>
-          <select id="report-time-filter">
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="custom">Custom Range</option>
-          </select>
-        </div>
-      </div>
-      
-      <div id="custom-range-group" class="hidden">
-        <div class="date-range-inputs">
-          <div class="filter-group">
-            <label for="report-start-date">Start Date</label>
-            <input type="date" id="report-start-date">
-          </div>
-          <div class="filter-group">
-            <label for="report-end-date">End Date</label>
-            <input type="date" id="report-end-date">
+        <div id="custom-range-group" style="display: none; margin-top: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="input-group">
+              <label for="report-start-date">Start Date</label>
+              <input type="date" id="report-start-date" class="filter-select">
+            </div>
+            <div class="input-group">
+              <label for="report-end-date">End Date</label>
+              <input type="date" id="report-end-date" class="filter-select">
+            </div>
           </div>
         </div>
       </div>
       
-      <div class="reports-summary">
+      <div class="reports-summary card mb-4">
         <h3>Summary</h3>
-        <div class="summary-stats">
-          <div class="stat-card">
-            <div class="stat-value">${this.students.length}</div>
-            <div class="stat-label">Total Students</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+          <div class="summary-item">
+            <p>Total Students</p>
+            <h2>${this.students.length}</h2>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="avg-attendance">0%</div>
-            <div class="stat-label">Average Attendance</div>
+          <div class="summary-item">
+            <p>Average Attendance</p>
+            <h2 id="avg-attendance">0%</h2>
           </div>
-          <div class="stat-card">
-            <div class="stat-value" id="total-sessions">0</div>
-            <div class="stat-label">Sessions</div>
+          <div class="summary-item">
+            <p>Sessions</p>
+            <h2 id="total-sessions">0</h2>
           </div>
         </div>
       </div>
       
-      <div class="reports-chart">
+      <div class="reports-chart card" style="padding: 20px; height: 300px;">
         <h3>Attendance Trend</h3>
-        <div id="attendance-chart"></div>
+        <div id="attendance-chart" style="height: 200px;"></div>
       </div>
-    `;
-    
-    // Add reports styles if not already present
-    if (!document.getElementById('reports-styles')) {
-      const style = document.createElement('style');
-      style.id = 'reports-styles';
-      style.textContent = `
-        .reports-filters {
+      
+      <style>
+        .reports-filters-container {
+          margin-bottom: 24px;
+        }
+        
+        .filter-controls {
           display: flex;
           gap: 16px;
-          margin-bottom: 24px;
           flex-wrap: wrap;
         }
-        .filter-group {
-          flex: 1;
-          min-width: 200px;
+        
+        .filter-select-wrapper {
+          position: relative;
+          min-width: 180px;
+          flex-grow: 1;
         }
-        .filter-group label {
-          display: block;
-          margin-bottom: 6px;
-          font-weight: 500;
-          color: #4a5568;
-        }
-        .filter-group select, .filter-group input {
+        
+        .filter-select {
           width: 100%;
-          padding: 10px 12px;
+          padding: 12px 16px;
+          padding-right: 40px;
+          font-size: 14px;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          color: #2d3748;
+          background-color: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 8px;
+          appearance: none;
+          outline: none;
+          transition: all 0.2s ease;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
-        .hidden {
-          display: none;
+        
+        .filter-select:focus {
+          border-color: #4299e1;
+          box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
         }
-        .date-range-inputs {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-top: 16px;
+        
+        .filter-select:hover {
+          border-color: #cbd5e0;
         }
-        .reports-summary {
-          background: white;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 24px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        
+        .select-arrow {
+          position: absolute;
+          top: 50%;
+          right: 16px;
+          transform: translateY(-50%);
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 6px solid #718096;
+          pointer-events: none;
         }
-        .reports-summary h3 {
-          margin: 0 0 16px 0;
-          color: #2d3748;
-        }
-        .summary-stats {
-          display: flex;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-        .stat-card {
-          flex: 1;
-          min-width: 120px;
-          background: #f8f9fa;
-          border-radius: 8px;
-          padding: 16px;
+        
+        .summary-item {
           text-align: center;
+          flex: 1;
         }
-        .stat-value {
+        
+        .summary-item h2 {
           font-size: 24px;
-          font-weight: bold;
-          color: #4299e1;
-          margin-bottom: 4px;
+          margin: 8px 0 0;
+          color: var(--primary);
         }
-        .stat-label {
-          font-size: 14px;
-          color: #718096;
+        
+        @media (max-width: 640px) {
+          .filter-controls {
+            flex-direction: column;
+            gap: 12px;
+          }
+          
+          .filter-select-wrapper {
+            min-width: 100%;
+          }
         }
-        .reports-chart {
-          background: white;
-          border-radius: 12px;
-          padding: 20px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .reports-chart h3 {
-          margin: 0 0 16px 0;
-          color: #2d3748;
-        }
-        #attendance-chart {
-          height: 300px;
-        }
-      `;
-      document.head.appendChild(style);
-    }
+      </style>
+    `;
     
-    // Initialize chart
+    // Render chart
     this.renderAttendanceChart();
     
-    // Set up event listeners
     document.getElementById('export-reports-btn').addEventListener('click', () => {
       this.showExportReportsModal();
     });
@@ -2332,9 +1876,9 @@ class NearCheckApp {
     document.getElementById('report-time-filter').addEventListener('change', (e) => {
       const customRangeGroup = document.getElementById('custom-range-group');
       if (e.target.value === 'custom') {
-        customRangeGroup.classList.remove('hidden');
+        customRangeGroup.style.display = 'block';
       } else {
-        customRangeGroup.classList.add('hidden');
+        customRangeGroup.style.display = 'none';
         this.updateReports();
       }
     });
@@ -2347,33 +1891,17 @@ class NearCheckApp {
     this.updateReports();
   }
   
-  // Render attendance chart
   renderAttendanceChart() {
-    const ctx = document.getElementById('attendance-chart');
-    if (!ctx) return;
-    
-    // Create canvas if it doesn't exist
-    if (!ctx.querySelector('canvas')) {
-      ctx.innerHTML = '<canvas></canvas>';
-    }
-    
-    const canvas = ctx.querySelector('canvas');
-    const chartCtx = canvas.getContext('2d');
-    
-    // Destroy previous chart instance if exists
-    if (window.attendanceChart) {
-      window.attendanceChart.destroy();
-    }
-    
-    window.attendanceChart = new Chart(chartCtx, {
+    const ctx = document.getElementById('attendance-chart').getContext('2d');
+    window.attendanceChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
         datasets: [{
           label: 'Attendance Rate',
           data: [65, 59, 80, 81, 56, 55, 40],
-          backgroundColor: 'rgba(66, 153, 225, 0.2)',
-          borderColor: 'rgba(66, 153, 225, 1)',
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          borderColor: 'rgba(54, 162, 235, 1)',
           borderWidth: 2,
           tension: 0.4,
           fill: true
@@ -2402,7 +1930,6 @@ class NearCheckApp {
     });
   }
   
-  // Update reports data
   async updateReports() {
     try {
       this.showLoading('Loading report data...');
@@ -2468,7 +1995,6 @@ class NearCheckApp {
     }
   }
   
-  // Update chart with attendance data
   updateChartWithData(attendanceData, startDate, endDate) {
     if (!window.Chart || !window.attendanceChart) return;
     
@@ -2503,7 +2029,6 @@ class NearCheckApp {
     window.attendanceChart.update();
   }
   
-  // Render permissions content
   renderPermissionsContent() {
     const contentArea = document.getElementById('content-area');
     
@@ -2519,146 +2044,313 @@ class NearCheckApp {
     }
     
     contentArea.innerHTML = `
-      <div class="permissions-container">
-        <div class="permissions-header">
-          <h2>Location Access</h2>
-          <p>NearCheck Lite uses your location only during active class sessions to verify your physical presence.</p>
+      <div class="location-access-card">
+        <div class="location-access-header">
+          <h2 class="location-access-title">Location Access</h2>
         </div>
         
-        <div class="permission-status ${this.locationPermission.status}">
-          <div class="status-icon">
-            ${this.getStatusIcon(this.locationPermission.status)}
-          </div>
-          <div class="status-details">
-            <h3>${this.getStatusTitle(this.locationPermission.status)}</h3>
-            <p>${this.getStatusDescription(this.locationPermission.status)}</p>
-            ${timeRemaining ? `<div class="time-remaining">${timeRemaining}</div>` : ''}
-          </div>
-        </div>
-        
-        <div class="permission-actions">
-          ${this.locationPermission.status === 'granted' ? `
-            <button class="button button-danger" id="disable-location-btn">
-              <i class="fas fa-times"></i>
-              <span>Revoke Access</span>
-            </button>
-            <button class="button button-secondary" id="extend-location-btn">
-              <i class="fas fa-clock"></i>
-              <span>Extend Duration</span>
-            </button>
-          ` : `
-            <button class="button button-primary" id="enable-location-btn">
-              <i class="fas fa-map-marker-alt"></i>
-              <span>Enable Location</span>
-            </button>
-          `}
-        </div>
-        
-        ${this.locationPermission.status === 'granted' ? `
-          <div class="auto-checkin-toggle">
-            <label class="toggle-switch">
-              <input type="checkbox" id="auto-checkin-toggle" ${this.locationPermission.autoCheckIn ? 'checked' : ''}>
-              <span class="slider"></span>
-            </label>
-            <div class="toggle-label">
-              <h4>Auto Check-In</h4>
-              <p>Automatically check-in when in class location (within 24-hour window)</p>
+        <div class="location-access-body">
+          <p class="location-access-description">
+            NearCheck Lite uses your location <strong>only during active class sessions</strong> to verify your physical presence. 
+            This helps maintain academic integrity while respecting your privacy.
+          </p>
+          
+          <div class="permission-status-container">
+            <h3 class="permission-status-heading">Current Access Status</h3>
+            
+            <div class="permission-status-indicator ${this.locationPermission.status}">
+              <div class="status-visual">
+                <div class="status-icon-circle">
+                  ${this.getStatusIcon(this.locationPermission.status)}
+                </div>
+                <div class="status-pulse-effect"></div>
+              </div>
+              <div class="status-details">
+                <h4 class="status-title">${this.getStatusTitle(this.locationPermission.status)}</h4>
+                <p class="status-description">${this.getStatusDescription(this.locationPermission.status)}</p>
+                ${timeRemaining ? `<div class="status-timer"><span class="timer-icon">⏳</span> ${timeRemaining}</div>` : ''}
+              </div>
             </div>
+            
+            <div class="permission-actions">
+              ${this.locationPermission.status === 'granted' ? `
+                <button class="action-btn action-danger" id="disable-location-btn">
+                  <span class="btn-icon"><i class="fas fa-close"></i></span>
+                  <span class="btn-text">Revoke Access</span>
+                </button>
+                <button class="action-btn action-neutral" id="extend-location-btn">
+                  <span class="btn-icon"><i class="fas fa-timer"></i></span>
+                  <span class="btn-text">Extend Duration</span>
+                </button>
+              ` : `
+                <button class="action-btn action-primary" id="enable-location-btn">
+                  <span class="btn-icon"><i class="fas fa-location"></i></span>
+                  <span class="btn-text">Enable Location</span>
+                </button>
+              `}
+            </div>
+            
+            ${this.locationPermission.status === 'granted' ? `
+              <div class="auto-checkin-toggle">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="auto-checkin-toggle" ${this.locationPermission.autoCheckIn ? 'checked' : ''}>
+                  <span class="slider"></span>
+                </label>
+                <div class="toggle-label">
+                  <h4>Auto Check-In</h4>
+                  <p>Automatically check-in when in class location (within 24-hour window)</p>
+                </div>
+              </div>
+            ` : ''}
           </div>
-        ` : ''}
+        </div>
         
-        <div class="permission-info">
-          <div class="info-section">
-            <h3><i class="fas fa-search"></i> How Location Verification Works</h3>
-            <ol>
-              <li>Permission request when you check in (one-time or per session)</li>
-              <li>Instant comparison with teacher's location coordinates</li>
-              <li>Verification against classroom proximity setting</li>
-              <li>Secure recording with timestamp and anonymized location data</li>
-            </ol>
+        <div class="location-info-sections">
+          <div class="info-section how-it-works">
+            <h3 class="info-section-title">
+              <span class="title-icon"><i class="fas fa-search"></i></span>
+              How Location Verification Works
+            </h3>
+            <ul class="info-points">
+              <li class="info-point">
+                <div class="point-icon">1</div>
+                <p>Permission request when you check in (one-time or per session)</p>
+              </li>
+              <li class="info-point">
+                <div class="point-icon">2</div>
+                <p>Instant comparison with teacher's location coordinates</p>
+              </li>
+              <li class="info-point">
+                <div class="point-icon">3</div>
+                <p>Verification against classroom proximity setting</p>
+              </li>
+              <li class="info-point">
+                <div class="point-icon">4</div>
+                <p>Secure recording with timestamp and anonymized location data</p>
+              </li>
+            </ul>
           </div>
           
-          <div class="info-section">
-            <h3><i class="fas fa-shield-alt"></i> Your Privacy Safeguards</h3>
-            <ul>
-              <li><strong>Single-purpose collection:</strong> Only for attendance verification</li>
-              <li><strong>Automatic expiration:</strong> Access revokes after 24 inactive hours</li>
-              <li><strong>No background tracking:</strong> Only active during check-in</li>
-              <li><strong>Immediate control:</strong> Disable anytime with one tap</li>
+          <div class="info-section privacy">
+            <h3 class="info-section-title">
+              <span class="title-icon"><i class="fas fa-shield-alt"></i></span>
+              Your Privacy Safeguards
+            </h3>
+            <ul class="info-points">
+              <li class="info-point">
+                <div class="point-icon">✓</div>
+                <p><strong>Single-purpose collection:</strong> Only for attendance verification</p>
+              </li>
+              <li class="info-point">
+                <div class="point-icon">✓</div>
+                <p><strong>Automatic expiration:</strong> Access revokes after 24 inactive hours</p>
+              </li>
+              <li class="info-point">
+                <div class="point-icon">✓</div>
+                <p><strong>No background tracking:</strong> Only active during check-in</p>
+              </li>
+              <li class="info-point">
+                <div class="point-icon">✓</div>
+                <p><strong>Immediate control:</strong> Disable anytime with one tap</p>
+              </li>
             </ul>
           </div>
         </div>
       </div>
-    `;
-    
-    // Add permissions styles if not already present
-    if (!document.getElementById('permissions-styles')) {
-      const style = document.createElement('style');
-      style.id = 'permissions-styles';
-      style.textContent = `
-        .permissions-container {
+      
+      <style>
+        .location-access-card {
+          font-family: 'Poppins', sans-serif;
+          background: #ffffff;
+          border-radius: 16px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          padding: 32px;
           max-width: 800px;
           margin: 0 auto;
+          border: 1px solid #f0f0f0;
         }
-        .permissions-header {
+        
+        .location-access-header {
+          margin-bottom: 24px;
+          border-bottom: 1px solid #f5f5f5;
+          padding-bottom: 16px;
+        }
+        
+        .location-access-title {
+          font-size: 24px;
+          font-weight: 700;
+          color: #2c3e50;
+          margin: 0 0 4px 0;
+        }
+        
+        .location-access-body {
+          margin-bottom: 32px;
+        }
+        
+        .location-access-description {
+          font-size: 16px;
+          line-height: 1.6;
+          color: #34495e;
           margin-bottom: 24px;
         }
-        .permissions-header h2 {
-          margin: 0 0 8px 0;
-          color: #2d3748;
+        
+        .permission-status-container {
+          background: #f9fbfd;
+          border-radius: 16px;
+          padding: 24px;
+          border: 1px solid #e3eef9;
+          margin-bottom: 24px;
         }
-        .permissions-header p {
-          margin: 0;
-          color: #718096;
-        }
-        .permission-status {
+        
+        .permission-status-heading {
+          font-size: 18px;
+          color: #2c3e50;
+          margin-bottom: 16px;
           display: flex;
           align-items: center;
-          gap: 16px;
-          padding: 20px;
-          border-radius: 12px;
+        }
+        
+        .permission-status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 20px;
           margin-bottom: 24px;
-          background: #f8f9fa;
         }
-        .permission-status.granted {
-          border-left: 4px solid #48bb78;
+        
+        .status-visual {
+          position: relative;
+          flex-shrink: 0;
         }
-        .permission-status.denied {
-          border-left: 4px solid #f56565;
+        
+        .status-icon-circle {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          z-index: 2;
+          position: relative;
         }
-        .permission-status.not-granted {
-          border-left: 4px solid #ed8936;
+        
+        .status-pulse-effect {
+          position: absolute;
+          width: 72px;
+          height: 72px;
+          background: rgba(66, 165, 245, 0.2);
+          border-radius: 50%;
+          top: -6px;
+          left: -6px;
+          animation: pulse 2s infinite;
         }
-        .status-icon {
-          font-size: 32px;
+        
+        @keyframes pulse {
+          0% { transform: scale(0.95); opacity: 0.8; }
+          70% { transform: scale(1.1); opacity: 0.2; }
+          100% { transform: scale(0.95); opacity: 0.8; }
         }
-        .permission-status.granted .status-icon {
-          color: #48bb78;
+        
+        .permission-status-indicator.granted .status-icon-circle {
+          background: #e8f5e9;
+          color: #4caf50;
         }
-        .permission-status.denied .status-icon {
-          color: #f56565;
+        
+        .permission-status-indicator.denied .status-icon-circle {
+          background: #ffebee;
+          color: #f44336;
         }
-        .permission-status.not-granted .status-icon {
-          color: #ed8936;
+        
+        .permission-status-indicator.not-granted .status-icon-circle {
+          background: #fff8e1;
+          color: #ffa000;
         }
-        .status-details h3 {
-          margin: 0 0 4px 0;
-          color: #2d3748;
+        
+        .permission-status-indicator.granted .status-pulse-effect {
+          background: rgba(76, 175, 80, 0.2);
         }
-        .status-details p {
+        
+        .status-details {
+          flex-grow: 1;
+        }
+        
+        .status-title {
+          font-size: 18px;
+          font-weight: 600;
+          margin: 0 0 6px 0;
+          color: #2c3e50;
+        }
+        
+        .status-description {
+          font-size: 15px;
+          color: #7f8c8d;
           margin: 0;
-          color: #718096;
+          line-height: 1.5;
         }
-        .time-remaining {
+        
+        .status-timer {
           margin-top: 8px;
           font-size: 14px;
-          color: #4299e1;
+          color: #3498db;
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
+        
         .permission-actions {
           display: flex;
           gap: 12px;
-          margin-bottom: 24px;
+          flex-wrap: wrap;
         }
+        
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 20px;
+          font-size: 15px;
+          font-weight: 600;
+          border-radius: 10px;
+          cursor: pointer;
+          border: none;
+          transition: all 0.25s ease;
+          user-select: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .action-primary {
+          background: #3498db;
+          color: white;
+        }
+        
+        .action-primary:hover {
+          background: #2980b9;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        .action-danger {
+          background: #e74c3c;
+          color: white;
+        }
+        
+        .action-danger:hover {
+          background: #c0392b;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        
+        .action-neutral {
+          background: #95a5a6;
+          color: white;
+        }
+        
+        .action-neutral:hover {
+          background: #7f8c8d;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+        }
+        
         .auto-checkin-toggle {
           display: flex;
           align-items: center;
@@ -2666,19 +2358,22 @@ class NearCheckApp {
           padding: 16px;
           background: #f8f9fa;
           border-radius: 12px;
-          margin-bottom: 24px;
+          margin-top: 24px;
         }
+        
         .toggle-switch {
           position: relative;
           display: inline-block;
           width: 50px;
           height: 26px;
         }
+        
         .toggle-switch input {
           opacity: 0;
           width: 0;
           height: 0;
         }
+        
         .slider {
           position: absolute;
           cursor: pointer;
@@ -2690,6 +2385,7 @@ class NearCheckApp {
           transition: .4s;
           border-radius: 34px;
         }
+        
         .slider:before {
           position: absolute;
           content: "";
@@ -2701,58 +2397,113 @@ class NearCheckApp {
           transition: .4s;
           border-radius: 50%;
         }
+        
         input:checked + .slider {
-          background-color: #48bb78;
+          background-color: #4CAF50;
         }
+        
         input:checked + .slider:before {
           transform: translateX(24px);
         }
+        
         .toggle-label h4 {
           margin: 0 0 4px 0;
-          color: #2d3748;
+          color: #2c3e50;
         }
+        
         .toggle-label p {
           margin: 0;
           font-size: 14px;
-          color: #718096;
+          color: #7f8c8d;
         }
-        .permission-info {
+        
+        .location-info-sections {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 24px;
+          margin-top: 32px;
         }
+        
         .info-section {
-          background: #f8f9fa;
-          border-radius: 12px;
+          background: #f9fbfd;
+          border-radius: 16px;
           padding: 20px;
+          border: 1px solid #e3eef9;
         }
-        .info-section h3 {
+        
+        .info-section-title {
+          font-size: 17px;
+          color: #2c3e50;
           margin: 0 0 16px 0;
           display: flex;
           align-items: center;
           gap: 8px;
-          color: #2d3748;
         }
-        .info-section ol, .info-section ul {
-          padding-left: 20px;
+        
+        .title-icon {
+          font-size: 20px;
+        }
+        
+        .info-points {
+          list-style: none;
+          padding: 0;
           margin: 0;
         }
-        .info-section li {
-          margin-bottom: 8px;
+        
+        .info-point {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 14px;
+          align-items: flex-start;
         }
+        
+        .point-icon {
+          width: 24px;
+          height: 24px;
+          background: #3498db;
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+        
+        .info-point p {
+          margin: 0;
+          font-size: 14px;
+          line-height: 1.5;
+          color: #34495e;
+        }
+        
+        .info-section.privacy .point-icon {
+          background: #2ecc71;
+        }
+        
         @media (max-width: 768px) {
-          .permission-info {
+          .location-info-sections {
             grid-template-columns: 1fr;
           }
+          
+          .permission-status-indicator {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          
           .permission-actions {
             flex-direction: column;
           }
+          
+          .action-btn {
+            justify-content: center;
+          }
         }
-      `;
-      document.head.appendChild(style);
-    }
+      </style>
+    `;
     
-    // Set up event listeners
+    // Set up event listeners for permission buttons
     const enableBtn = document.getElementById('enable-location-btn');
     if (enableBtn) {
       enableBtn.addEventListener('click', async () => {
@@ -2801,7 +2552,6 @@ class NearCheckApp {
     }
   }
   
-  // Get status icon based on permission state
   getStatusIcon(status) {
     switch (status) {
       case 'granted':
@@ -2813,7 +2563,6 @@ class NearCheckApp {
     }
   }
   
-  // Get status title based on permission state
   getStatusTitle(status) {
     switch (status) {
       case 'granted':
@@ -2825,7 +2574,6 @@ class NearCheckApp {
     }
   }
   
-  // Get status description based on permission state
   getStatusDescription(status) {
     switch (status) {
       case 'granted':
@@ -2837,70 +2585,35 @@ class NearCheckApp {
     }
   }
   
-  // Render account content
   renderAccountContent() {
     const contentArea = document.getElementById('content-area');
     contentArea.innerHTML = `
-      <div class="account-container">
-        <div class="account-section">
-          <h2>Personal Information</h2>
-          <div class="input-group">
-            <label for="account-name">Full Name</label>
-            <input type="text" id="account-name" value="${this.currentUser.displayName || ''}" maxlength="100">
-          </div>
-          <div class="input-group">
-            <label for="account-email">Email</label>
-            <input type="email" id="account-email" value="${this.currentUser.email}" disabled>
-          </div>
-          <button class="button button-primary" id="save-account-btn">Save Changes</button>
+      <div class="card mb-4">
+        <h3 class="mb-4">Personal Information</h3>
+        <div class="input-group">
+          <label for="account-name">Full Name</label>
+          <input type="text" id="account-name" value="${this.currentUser.displayName || ''}" maxlength="100">
         </div>
-        
-        <div class="account-section">
-          <h2>Security</h2>
-          <p>Update your password to keep your account secure. Recommended if you suspect unauthorized access.</p>
-          <button class="button button-secondary" id="change-password-btn">Change Password</button>
+        <div class="input-group">
+          <label for="account-email">Email</label>
+          <input type="email" id="account-email" value="${this.currentUser.email}" disabled>
         </div>
-        
-        <div class="account-section danger-zone">
-          <h2>Danger Zone</h2>
-          <p>Deleting your account will permanently remove all your data from our systems.</p>
-          <button class="button button-danger" id="delete-account-btn">Delete Account</button>
-        </div>
+        <button class="button button-primary" id="save-account-btn">Save Changes</button>
+      </div>
+      
+      <div class="card mb-4">
+        <h3 class="mb-4">Security</h3>
+        <p class="mb-4">Update your password to keep your account secure. Recommended if you suspect unauthorized access.</p>
+        <button class="button button-secondary" id="change-password-btn">Change Password</button>
+      </div>
+      
+      <div class="card">
+        <h3 class="mb-4">Danger Zone</h3>
+        <p class="mb-4">Deleting your account will permanently remove all your data from our systems.</p>
+        <button class="button button-danger" id="delete-account-btn">Delete Account</button>
       </div>
     `;
     
-    // Add account styles if not already present
-    if (!document.getElementById('account-styles')) {
-      const style = document.createElement('style');
-      style.id = 'account-styles';
-      style.textContent = `
-        .account-container {
-          max-width: 600px;
-          margin: 0 auto;
-        }
-        .account-section {
-          background: white;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 24px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .account-section h2 {
-          margin: 0 0 16px 0;
-          color: #2d3748;
-        }
-        .account-section p {
-          margin: 0 0 16px 0;
-          color: #718096;
-        }
-        .danger-zone {
-          border-left: 4px solid #f56565;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
-    // Set up event listeners
     document.getElementById('save-account-btn').addEventListener('click', async () => {
       const newName = document.getElementById('account-name').value.trim();
       
@@ -2936,7 +2649,6 @@ class NearCheckApp {
     });
   }
   
-  // Show create section modal
   showCreateSectionModal() {
     this.showModal({
       title: 'Create New Section',
@@ -3028,7 +2740,6 @@ class NearCheckApp {
     });
   }
   
-  // Show edit section modal
   showEditSectionModal(section) {
     this.showModal({
       title: `Edit Section - ${section.name}`,
@@ -3109,7 +2820,6 @@ class NearCheckApp {
     });
   }
   
-  // Show delete section modal
   showDeleteSectionModal(section) {
     this.showModal({
       title: `Delete Section - ${section.name}`,
@@ -3178,7 +2888,6 @@ class NearCheckApp {
     });
   }
   
-  // Show start session modal
   showStartSessionModal(section) {
     this.showModal({
       title: `Start Attendance Session - ${section.name}`,
@@ -3278,7 +2987,6 @@ class NearCheckApp {
     });
   }
   
-  // End an active session
   async endSession(sessionId) {
     try {
       await this.db.collection('sessions').doc(sessionId).update({
@@ -3294,7 +3002,6 @@ class NearCheckApp {
     }
   }
   
-  // Show invite students modal
   showInviteStudentsModal(section) {
     const inviteLink = `${window.location.origin}${window.location.pathname}?sectionid=${section.id}`;
     const qr = qrcode(0, 'L');
@@ -3306,15 +3013,15 @@ class NearCheckApp {
       title: `Invite Students - ${section.name}`,
       body: `
         <div class="qr-code-container">
-          <div class="qr-code">${qrSvg}</div>
+          <div class="qr-code" id="qr-code">${qrSvg}</div>
           <p>Scan this QR code to join</p>
         </div>
         
         <div class="input-group mt-4">
           <label for="invite-link">Invitation Link</label>
-          <div class="input-with-button">
+          <div style="display: flex; gap: 8px;">
             <input type="text" id="invite-link" value="${inviteLink}" readonly>
-            <button class="button button-secondary" id="copy-link-btn">
+            <button class="button button-secondary" id="copy-link-btn" aria-label="Copy invitation link">
               <i class="fas fa-copy"></i>
             </button>
           </div>
@@ -3322,9 +3029,9 @@ class NearCheckApp {
         
         <div class="input-group">
           <label for="section-id">Section ID</label>
-          <div class="input-with-button">
+          <div style="display: flex; gap: 8px;">
             <input type="text" id="section-id" value="${section.id}" readonly>
-            <button class="button button-secondary" id="copy-id-btn">
+            <button class="button button-secondary" id="copy-id-btn" aria-label="Copy section ID">
               <i class="fas fa-copy"></i>
             </button>
           </div>
@@ -3353,13 +3060,12 @@ class NearCheckApp {
     });
   }
   
-  // Show manage students modal
   showManageStudentsModal(section) {
     this.showModal({
       title: `Manage Students - ${section.name}`,
       body: `
-        <div class="students-table-container">
-          <table class="students-table">
+        <div style="max-height: 400px; overflow-y: auto;">
+          <table class="data-table">
             <thead>
               <tr>
                 <th>Student</th>
@@ -3369,7 +3075,7 @@ class NearCheckApp {
             </thead>
             <tbody id="students-list">
               <tr>
-                <td colspan="3" class="loading-message">Loading students...</td>
+                <td colspan="3" style="text-align: center; padding: 16px;">Loading students...</td>
               </tr>
             </tbody>
           </table>
@@ -3394,7 +3100,7 @@ class NearCheckApp {
           if (querySnapshot.empty) {
             studentsList.innerHTML = `
               <tr>
-                <td colspan="3" class="empty-message">No students found in this section</td>
+                <td colspan="3" style="text-align: center; padding: 16px;">No students found in this section</td>
               </tr>
             `;
             return;
@@ -3405,21 +3111,21 @@ class NearCheckApp {
             studentsList.innerHTML += `
               <tr>
                 <td>
-                  <div class="student-info">
-                    <div class="student-avatar">
+                  <div class="d-flex align-items-center" style="gap: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center;">
                       ${student.fullName ? student.fullName.charAt(0) : 'S'}
                     </div>
                     <div>
-                      <div class="student-name">${student.fullName || 'Student'}</div>
-                      <div class="student-email">${student.email}</div>
+                      <div style="font-weight: 500;">${student.fullName || 'Student'}</div>
+                      <div style="font-size: 12px; color: var(--text-tertiary);">${student.email}</div>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <span class="status-badge">Active</span>
+                  <span class="badge badge-success">Active</span>
                 </td>
                 <td>
-                  <button class="button button-danger remove-btn" data-student-id="${doc.id}">
+                  <button class="button button-danger" style="padding: 4px 8px; font-size: 12px;" data-student-id="${doc.id}">
                     Remove
                   </button>
                 </td>
@@ -3428,7 +3134,7 @@ class NearCheckApp {
           });
           
           // Set up event listeners for remove buttons
-          modal.querySelectorAll('.remove-btn').forEach(btn => {
+          modal.querySelectorAll('button[data-student-id]').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               const studentId = e.target.getAttribute('data-student-id');
               if (confirm('Are you sure you want to remove this student from the section?')) {
@@ -3452,7 +3158,7 @@ class NearCheckApp {
         } catch (error) {
           studentsList.innerHTML = `
             <tr>
-              <td colspan="3" class="error-message">Error loading students: ${error.message}</td>
+              <td colspan="3" style="text-align: center; padding: 16px; color: var(--error);">Error loading students: ${error.message}</td>
             </tr>
           `;
         }
@@ -3460,7 +3166,6 @@ class NearCheckApp {
     });
   }
   
-  // Show student details modal
   showStudentDetailsModal(student) {
     this.showModal({
       title: `Student Details - ${student.fullName || 'Student'}`,
@@ -3502,6 +3207,85 @@ class NearCheckApp {
             ` : '<p>No sections enrolled</p>'}
           </div>
         </div>
+        
+        <style>
+          .student-details {
+            text-align: center;
+          }
+          
+          .student-avatar-large {
+            width: 80px;
+            height: 80px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 16px;
+          }
+          
+          .student-info h3 {
+            margin: 0 0 4px 0;
+          }
+          
+          .student-email {
+            color: #6c757d;
+            margin: 0 0 16px 0;
+          }
+          
+          .student-stats {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin: 16px 0;
+          }
+          
+          .stat-item {
+            text-align: center;
+          }
+          
+          .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+          }
+          
+          .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+          }
+          
+          .student-sections {
+            margin-top: 24px;
+            text-align: left;
+          }
+          
+          .student-sections h4 {
+            margin-bottom: 12px;
+            font-size: 16px;
+          }
+          
+          .section-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+          
+          .section-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+          }
+          
+          .section-list li:last-child {
+            border-bottom: none;
+          }
+        </style>
       `,
       buttons: [{
         text: 'Close',
@@ -3511,56 +3295,48 @@ class NearCheckApp {
     });
   }
   
-  // Show export reports modal
   showExportReportsModal() {
     this.showModal({
       title: 'Export Attendance Data',
       body: `
-        <div class="export-options">
-          <div class="input-group">
-            <label for="export-format">Format</label>
-            <select id="export-format">
-              <option value="csv">CSV (.csv)</option>
-              <option value="pdf">PDF (.pdf)</option>
-            </select>
-          </div>
+        <div class="input-group">
+          <label for="export-format">Format</label>
+          <select id="export-format">
+            <option value="csv">CSV (.csv)</option>
+            <option value="pdf">PDF (.pdf)</option>
+          </select>
+        </div>
+        
+        <div class="input-group">
+          <label for="export-time-range">Time Range</label>
+          <select id="export-time-range">
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="custom">Custom Range</option>
+          </select>
+        </div>
+        
+        <div class="input-group" id="export-custom-range-group" style="display: none;">
+          <label for="export-start-date">Start Date</label>
+          <input type="date" id="export-start-date">
           
-          <div class="input-group">
-            <label for="export-time-range">Time Range</label>
-            <select id="export-time-range">
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="custom">Custom Range</option>
-            </select>
-          </div>
-          
-          <div class="input-group" id="export-custom-range-group" style="display: none;">
-            <div class="date-range-inputs">
-              <div class="input-group">
-                <label for="export-start-date">Start Date</label>
-                <input type="date" id="export-start-date">
-              </div>
-              <div class="input-group">
-                <label for="export-end-date">End Date</label>
-                <input type="date" id="export-end-date">
-              </div>
-            </div>
-          </div>
-          
-          <div class="input-group">
-            <label for="export-section">Section</label>
-            <select id="export-section">
-              <option value="all">All Sections</option>
-              ${this.sections.map(section => `
-                <option value="${section.id}">${section.name}</option>
-              `).join('')}
-            </select>
-          </div>
-          
-          <div class="input-group">
-            <label for="export-email">Email for PDF (optional)</label>
-            <input type="email" id="export-email" placeholder="Enter email to receive PDF">
-          </div>
+          <label for="export-end-date" style="margin-top: 8px;">End Date</label>
+          <input type="date" id="export-end-date">
+        </div>
+        
+        <div class="input-group">
+          <label for="export-section">Section</label>
+          <select id="export-section">
+            <option value="all">All Sections</option>
+            ${this.sections.map(section => `
+              <option value="${section.id}">${section.name}</option>
+            `).join('')}
+          </select>
+        </div>
+        
+        <div class="input-group">
+          <label for="export-email">Email for PDF (optional)</label>
+          <input type="email" id="export-email" placeholder="Enter email to receive PDF">
         </div>
       `,
       buttons: [
@@ -3574,13 +3350,13 @@ class NearCheckApp {
           class: 'button-primary',
           action: async () => {
             const format = document.getElementById('export-format').value;
-            const timeFilter = document.getElementById('export-time-range').value;
+            const timeRange = document.getElementById('export-time-range').value;
             const sectionId = document.getElementById('export-section').value;
             const email = document.getElementById('export-email').value.trim();
             
             let startDate, endDate = new Date();
             
-            if (timeFilter === 'custom') {
+            if (timeRange === 'custom') {
               const startDateStr = document.getElementById('export-start-date').value;
               const endDateStr = document.getElementById('export-end-date').value;
               
@@ -3591,7 +3367,7 @@ class NearCheckApp {
               
               startDate = new Date(startDateStr);
               endDate = new Date(endDateStr);
-            } else if (timeFilter === 'week') {
+            } else if (timeRange === 'week') {
               startDate = new Date();
               startDate.setDate(startDate.getDate() - 7);
             } else { // month
@@ -3655,7 +3431,6 @@ class NearCheckApp {
     });
   }
   
-  // Export data to CSV
   exportToCSV(data, filename) {
     if (!data.length) {
       this.showError('No data to export');
@@ -3691,7 +3466,6 @@ class NearCheckApp {
     document.body.removeChild(link);
   }
   
-  // Export data to PDF (mock implementation)
   exportToPDF(data) {
     this.showModal({
       title: 'PDF Export',
@@ -3699,8 +3473,8 @@ class NearCheckApp {
         <p>For PDF export, please provide an email address where we can send the report.</p>
         <p>Alternatively, you can use the print function in your browser:</p>
         
-        <div class="print-option">
-          <button class="button button-primary" id="print-report-btn">
+        <div class="input-group mt-4">
+          <button class="button button-primary w-100" id="print-report-btn">
             <i class="fas fa-print"></i> Print Report
           </button>
         </div>
@@ -3718,10 +3492,10 @@ class NearCheckApp {
     });
   }
   
-  // Send PDF by email (mock implementation)
   async sendPDFByEmail(data, email) {
     try {
       // In a real implementation, you would call a cloud function or API to generate and send the PDF
+      // This is a mock implementation
       this.showSuccess(`PDF will be sent to ${email}. (Mock implementation)`);
       return true;
     } catch (error) {
@@ -3730,7 +3504,6 @@ class NearCheckApp {
     }
   }
   
-  // Export students list
   exportStudentsList() {
     if (!this.students.length) {
       this.showError('No students to export');
@@ -3746,26 +3519,23 @@ class NearCheckApp {
     this.exportToCSV(data, `students_${new Date().toISOString().split('T')[0]}.csv`);
   }
   
-  // Show change password modal
   showChangePasswordModal() {
     this.showModal({
       title: 'Change Password',
       body: `
-        <form id="change-password-form">
-          <div class="input-group">
-            <label for="current-password">Current Password</label>
-            <input type="password" id="current-password" required>
-          </div>
-          <div class="input-group">
-            <label for="new-password">New Password</label>
-            <input type="password" id="new-password" required minlength="6">
-            <p class="input-hint">Minimum 6 characters</p>
-          </div>
-          <div class="input-group">
-            <label for="confirm-new-password">Confirm New Password</label>
-            <input type="password" id="confirm-new-password" required minlength="6">
-          </div>
-        </form>
+        <div class="input-group">
+          <label for="current-password">Current Password</label>
+          <input type="password" id="current-password" required>
+        </div>
+        <div class="input-group">
+          <label for="new-password">New Password</label>
+          <input type="password" id="new-password" required minlength="6">
+          <p class="input-hint">Minimum 6 characters</p>
+        </div>
+        <div class="input-group">
+          <label for="confirm-new-password">Confirm New Password</label>
+          <input type="password" id="confirm-new-password" required minlength="6">
+        </div>
       `,
       buttons: [
         {
@@ -3825,15 +3595,12 @@ class NearCheckApp {
     });
   }
   
-  // Show delete account modal
   showDeleteAccountModal() {
     this.showModal({
       title: 'Delete Account',
       body: `
-        <div class="delete-account-warning">
-          <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-          <p>All your data will be permanently removed from our systems.</p>
-        </div>
+        <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+        <p class="mb-4">All your data will be permanently removed from our systems.</p>
         
         <div class="input-group">
           <label for="delete-password">Enter your password to confirm</label>
@@ -3891,16 +3658,13 @@ class NearCheckApp {
     });
   }
   
-  // Show forgot password modal
   showForgotPasswordModal() {
     this.showModal({
       title: 'Reset Password',
       body: `
-        <div class="forgot-password-info">
-          <p>Enter your email address and we'll send you a link to reset your password.</p>
-        </div>
+        <p>Enter your email address and we'll send you a link to reset your password.</p>
         
-        <div class="input-group">
+        <div class="input-group mt-4">
           <label for="reset-email">Email</label>
           <input type="email" id="reset-email" required>
         </div>
@@ -3943,7 +3707,6 @@ class NearCheckApp {
     });
   }
   
-  // Handle student check-in
   async handleStudentCheckIn(section) {
     try {
       this.showLoading('Preparing check-in...');
@@ -4016,7 +3779,6 @@ class NearCheckApp {
     }
   }
   
-  // Get current position with validation
   async getCurrentPosition() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -4058,7 +3820,6 @@ class NearCheckApp {
     });
   }
   
-  // Calculate distance between two points
   calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3; // Earth radius in meters
     const φ1 = lat1 * Math.PI / 180;
@@ -4074,8 +3835,13 @@ class NearCheckApp {
     return R * c;
   }
   
-  // Show modal dialog
   showModal(options) {
+    // Close any existing modal first
+    const existingModal = document.querySelector('.modal-overlay');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.setAttribute('role', 'dialog');
@@ -4100,166 +3866,6 @@ class NearCheckApp {
       </div>
     `;
     
-    // Add modal styles if not already present
-    if (!document.getElementById('modal-styles')) {
-      const style = document.createElement('style');
-      style.id = 'modal-styles';
-      style.textContent = `
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          opacity: 0;
-          animation: fadeIn 0.3s forwards;
-        }
-        @keyframes fadeIn {
-          to { opacity: 1; }
-        }
-        .modal {
-          background: white;
-          border-radius: 12px;
-          width: 90%;
-          max-width: 500px;
-          max-height: 90vh;
-          display: flex;
-          flex-direction: column;
-          transform: translateY(20px);
-          animation: slideUp 0.3s forwards;
-        }
-        @keyframes slideUp {
-          to { transform: translateY(0); }
-        }
-        .modal-header {
-          padding: 20px;
-          border-bottom: 1px solid #e2e8f0;
-          position: relative;
-        }
-        .modal-header h2 {
-          margin: 0;
-          font-size: 20px;
-          color: #2d3748;
-        }
-        .close-button {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: #718096;
-        }
-        .modal-body {
-          padding: 20px;
-          overflow-y: auto;
-          flex: 1;
-        }
-        .modal-footer {
-          padding: 20px;
-          border-top: 1px solid #e2e8f0;
-          display: flex;
-          gap: 12px;
-          justify-content: flex-end;
-        }
-        .input-with-button {
-          display: flex;
-          gap: 8px;
-        }
-        .input-with-button input {
-          flex: 1;
-        }
-        .qr-code-container {
-          text-align: center;
-          margin-bottom: 16px;
-        }
-        .qr-code svg {
-          max-width: 200px;
-          margin: 0 auto;
-        }
-        .students-table-container {
-          max-height: 400px;
-          overflow-y: auto;
-        }
-        .students-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .students-table th {
-          text-align: left;
-          padding: 12px;
-          background: #f8f9fa;
-          position: sticky;
-          top: 0;
-        }
-        .students-table td {
-          padding: 12px;
-          border-bottom: 1px solid #e2e8f0;
-        }
-        .loading-message, .empty-message, .error-message {
-          text-align: center;
-          padding: 20px;
-        }
-        .error-message {
-          color: #e53e3e;
-        }
-        .student-info {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .student-avatar {
-          width: 32px;
-          height: 32px;
-          background: #4299e1;
-          color: white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-        }
-        .student-name {
-          font-weight: 500;
-        }
-        .student-email {
-          font-size: 12px;
-          color: #718096;
-        }
-        .status-badge {
-          display: inline-block;
-          padding: 4px 8px;
-          background: #48bb78;
-          color: white;
-          border-radius: 4px;
-          font-size: 12px;
-        }
-        .remove-btn {
-          padding: 6px 12px;
-          font-size: 14px;
-        }
-        .delete-account-warning {
-          margin-bottom: 16px;
-        }
-        .delete-account-warning p {
-          margin: 0 0 8px 0;
-        }
-        .forgot-password-info {
-          margin-bottom: 16px;
-        }
-        .forgot-password-info p {
-          margin: 0 0 8px 0;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
     
@@ -4272,7 +3878,7 @@ class NearCheckApp {
     }, 10);
     
     const closeModal = () => {
-      modal.style.animation = 'fadeOut 0.3s forwards';
+      modal.classList.remove('active');
       setTimeout(() => {
         modal.remove();
         document.body.style.overflow = '';
@@ -4314,9 +3920,82 @@ class NearCheckApp {
     
     document.addEventListener('keydown', handleKeyDown);
     modal._handleKeyDown = handleKeyDown;
+    
+    // Add modal styles if not already present
+    if (!document.getElementById('modal-styles')) {
+      const style = document.createElement('style');
+      style.id = 'modal-styles';
+      style.textContent = `
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          opacity: 0;
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .modal {
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          width: 90%;
+          max-width: 500px;
+          max-height: 90vh;
+          overflow-y: auto;
+          transform: translateY(20px);
+          transition: transform 0.3s ease-out;
+        }
+        
+        .modal-header {
+          padding: 16px 24px;
+          border-bottom: 1px solid #eee;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .modal-header h2 {
+          margin: 0;
+          font-size: 1.25rem;
+        }
+        
+        .close-button {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          padding: 0;
+          line-height: 1;
+        }
+        
+        .modal-body {
+          padding: 24px;
+        }
+        
+        .modal-footer {
+          padding: 16px 24px;
+          border-top: 1px solid #eee;
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
   }
   
-  // Show loading indicator
   showLoading(message = 'Loading...') {
     let loading = document.getElementById('loading-overlay');
     
@@ -4334,6 +4013,7 @@ class NearCheckApp {
       loading.style.justifyContent = 'center';
       loading.style.zIndex = '1000';
       loading.style.color = 'white';
+      loading.style.fontSize = '18px';
       loading.style.backdropFilter = 'blur(4px)';
       
       loading.innerHTML = `
@@ -4345,24 +4025,19 @@ class NearCheckApp {
       
       document.body.appendChild(loading);
       
-      // Add spinner animation if not already present
-      if (!document.getElementById('spinner-animation')) {
-        const style = document.createElement('style');
-        style.id = 'spinner-animation';
-        style.textContent = `
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `;
-        document.head.appendChild(style);
-      }
+      const style = document.createElement('style');
+      style.innerHTML = `
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
     } else {
       loading.querySelector('p').textContent = message;
       loading.style.display = 'flex';
     }
   }
   
-  // Hide loading indicator
   hideLoading() {
     const loading = document.getElementById('loading-overlay');
     if (loading) {
@@ -4370,19 +4045,15 @@ class NearCheckApp {
     }
   }
   
-  // Show error message
   showError(message) {
     this.showToast(message, 'error');
   }
   
-  // Show success message
   showSuccess(message) {
     this.showToast(message, 'success');
   }
   
-   // Show toast notification
   showToast(message, type = 'info') {
-    // Remove existing toasts
     document.querySelectorAll('.toast-message').forEach(el => el.remove());
     
     const toast = document.createElement('div');
@@ -4393,138 +4064,93 @@ class NearCheckApp {
     toast.style.bottom = '20px';
     toast.style.left = '50%';
     toast.style.transform = 'translateX(-50%)';
-    toast.style.backgroundColor = this.getToastColor(type);
+    toast.style.backgroundColor = `var(--${type})`;
     toast.style.color = 'white';
     toast.style.padding = '12px 24px';
     toast.style.borderRadius = '8px';
-    toast.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+    toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
     toast.style.zIndex = '1000';
     toast.style.display = 'flex';
     toast.style.alignItems = 'center';
     toast.style.gap = '8px';
     toast.style.maxWidth = '90%';
-    toast.style.textAlign = 'center';
+    toast.style.wordBreak = 'break-word';
+    toast.style.animation = 'fadeIn 0.3s ease-out forwards';
     
-    // Add icon based on type
-    let icon = '';
-    switch (type) {
-      case 'success':
-        icon = '<i class="fas fa-check-circle"></i>';
-        break;
-      case 'error':
-        icon = '<i class="fas fa-exclamation-circle"></i>';
-        break;
-      case 'warning':
-        icon = '<i class="fas fa-exclamation-triangle"></i>';
-        break;
-      default:
-        icon = '<i class="fas fa-info-circle"></i>';
-    }
+    const icon = type === 'error' ? 'fa-exclamation-circle' : 
+                type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
     
-    toast.innerHTML = `${icon} ${message}`;
+    toast.innerHTML = `
+      <i class="fas ${icon}" aria-hidden="true"></i>
+      <span>${message}</span>
+    `;
     
     document.body.appendChild(toast);
     
-    // Add animation
-    toast.style.animation = 'toastIn 0.3s forwards';
-    
-    // Remove after delay
     setTimeout(() => {
-      toast.style.animation = 'toastOut 0.3s forwards';
+      toast.style.animation = 'fadeOut 0.3s ease-out forwards';
       setTimeout(() => {
         toast.remove();
       }, 300);
-    }, 3000);
+    }, 5000);
     
-    // Add toast styles if not already present
-    if (!document.getElementById('toast-styles')) {
+    if (!document.getElementById('toast-animations')) {
       const style = document.createElement('style');
-      style.id = 'toast-styles';
-      style.textContent = `
-        @keyframes toastIn {
-          from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      style.id = 'toast-animations';
+      style.innerHTML = `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
           to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        @keyframes toastOut {
+        @keyframes fadeOut {
           from { opacity: 1; transform: translateX(-50%) translateY(0); }
-          to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+          to { opacity: 0; transform: translateX(-50%) translateY(10px); }
+        }
+        
+        :root {
+          --primary: #3498db;
+          --success: #2ecc71;
+          --error: #e74c3c;
+          --info: #3498db;
         }
       `;
       document.head.appendChild(style);
     }
   }
   
-  // Get toast color based on type
-  getToastColor(type) {
-    switch (type) {
-      case 'success':
-        return '#48bb78';
-      case 'error':
-        return '#f56565';
-      case 'warning':
-        return '#ed8936';
-      default:
-        return '#4299e1';
-    }
-  }
-  
-  // Show privacy policy
   showPrivacyPolicy() {
     this.showModal({
       title: 'Privacy Policy',
       body: `
-        <div class="privacy-policy-content">
-          <h3>NearCheck Lite Privacy Policy</h3>
-          <p>Last Updated: ${new Date().toLocaleDateString()}</p>
+        <div style="max-height: 400px; overflow-y: auto;">
+          <h3>Data Privacy Act of 2012 Compliance</h3>
+          <p>NearCheck Lite complies with the Philippine Data Privacy Act of 2012 (Republic Act No. 10173).</p>
           
-          <h4>1. Information We Collect</h4>
-          <p>We collect the following information when you use NearCheck Lite:</p>
+          <h4>Data Collection</h4>
+          <p>We collect only the minimum necessary personal information for attendance tracking:</p>
           <ul>
-            <li>Account information (name, email, role)</li>
-            <li>Class section information (for teachers)</li>
-            <li>Attendance records (for students)</li>
-            <li>Location data (only during active check-in sessions)</li>
-            <li>Device information (browser type, IP address)</li>
+            <li>For teachers: Name, email, birthdate</li>
+            <li>For students: Name, email, age confirmation</li>
           </ul>
           
-          <h4>2. How We Use Your Information</h4>
-          <p>We use the collected information to:</p>
+          <h4>Location Data</h4>
+          <p>Location data is collected only during active attendance sessions and is:</p>
           <ul>
-            <li>Provide and maintain the service</li>
-            <li>Verify attendance through location data</li>
-            <li>Generate attendance reports</li>
-            <li>Improve our services</li>
-            <li>Communicate with users</li>
-          </ul>
-          
-          <h4>3. Location Data</h4>
-          <p>Location data is:</p>
-          <ul>
-            <li>Only collected during active check-in sessions</li>
             <li>Used solely for attendance verification</li>
-            <li>Not stored permanently (only the verification result is kept)</li>
-            <li>Never shared with third parties</li>
+            <li>Stored in anonymized form</li>
+            <li>Automatically deleted after 30 days</li>
           </ul>
           
-          <h4>4. Data Security</h4>
-          <p>We implement appropriate security measures to protect your data:</p>
-          <ul>
-            <li>Encryption of sensitive data</li>
-            <li>Secure server infrastructure</li>
-            <li>Regular security audits</li>
-            <li>Limited access to personal data</li>
-          </ul>
-          
-          <h4>5. Your Rights</h4>
-          <p>You have the right to:</p>
+          <h4>Your Rights</h4>
+          <p>Under the Data Privacy Act, you have the right to:</p>
           <ul>
             <li>Access your personal data</li>
             <li>Request correction of inaccurate data</li>
             <li>Request deletion of your data</li>
-            <li>Withdraw consent for data processing</li>
+            <li>Withdraw consent</li>
           </ul>
           
-          <p>For any privacy-related inquiries, please contact us at privacy@nearcheck.com</p>
+          <p>For any data privacy concerns, please contact our Data Protection Officer at dpo@nearcheck.com</p>
         </div>
       `,
       buttons: [{
@@ -4536,32 +4162,14 @@ class NearCheckApp {
   }
 }
 
-// Initialize the application when DOM is loaded
+// Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if Firebase is already loaded
-  if (typeof firebase === 'undefined') {
-    // Load Firebase SDKs
-    const firebaseScripts = [
-      'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
-      'https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js',
-      'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js',
-      'https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js'
-    ];
-    
-    let loaded = 0;
-    
-    firebaseScripts.forEach(src => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.onload = () => {
-        loaded++;
-        if (loaded === firebaseScripts.length) {
-          new NearCheckApp();
-        }
-      };
-      document.head.appendChild(script);
-    });
-  } else {
-    new NearCheckApp();
-  }
+  const app = new NearCheckApp();
+  
+  // Handle window resize for responsive drawer
+  window.addEventListener('resize', () => {
+    if (document.querySelector('.drawer')) {
+      app.updateDrawerState();
+    }
+  });
 });
